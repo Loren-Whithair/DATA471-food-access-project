@@ -1,0 +1,800 @@
+---
+title: "Data471 EDA Project"
+author: "Group 21: Loren Whithair, Nancy Grace Busto, Hamid Mehmood, Leon Cai"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    md_extensions: -implicit_figures
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.align = "center")
+```
+
+```{=latex}
+\setlength{\LTcapwidth}{\linewidth}
+```
+
+#### Authors: names and Student ID
+
+- Loren Whithair (300 434 521)
+- Nancy Grace Busto (300 691 941)
+- Hamid Mehmood (300 693 052)
+- Leon Cai (300 692 424)
+
+# Background
+<!-- 1-3 pages -->
+
+## Dataset and source
+
+We use the 2019 Large Retailer Access Map (LRAM) data, part of the United
+States Department of Agriculture's Food Access Research Atlas (FARA,
+USDA ERS 2019 -- see References). This data is available directly from the USDA ERS
+[LRAM data download](https://www.ers.usda.gov/media/5627/2019-large-retailer-access-map-lram-formerly-known-as-the-food-access-research-atlas-fara-data.zip?v=29938).
+
+This data describes, by Census Tract, the accessibility of supermarkets to the population of that Census Tract. Food Access is defined in multiple variables by several distances - for example, **LAPOP1_10** describes the number of people that are more than 1 mile from a supermarket for an Urban Census Tract, and more than 10 miles for a Rural Census Tract. Demographic information such as the population of different ethnicities, the population of children and seniors, is available, both as totals for the census and as the total of each demographic that is more than a specific distance from a food vendor, as measured in the 2010 Census. All 50 US states are covered. 
+
+Exact descriptions of the measurements of each variable can be found in the documentation for the data set (see References).
+
+## Purpose
+
+Reduced access to healthy, affordable food is a recognised aggravating
+factor for people already living in poverty. Knowing which demographic
+characteristics are linked to low food access could help identify which
+areas and population groups food-access initiatives should prioritise, to have the greatest impact.
+
+## Data types and structure
+
+The data contains one row per census tract, with 72,531 rows. Each row also specifies the State and County (character/categorical). The rest of the data exhibits three variable types: binary flags (e.g. **Urban** flags if the censusTract is an Urban area, **LATracts1** flags if the tract is considered to be low access at a 1 mile distance); tract totals (numeric counts, e.g. **POP2010** for the total population of the tract, **TractKids** for the number of children in the tract); and continuous rates/shares (continuous, e.g. **lapophalfshare** details the share of the tract that are beyond 1/2 mile from a supermarket).
+
+## Completeness
+
+The following columns were fully populated:
+
+- State, County, Urban flag (basic identifier attributes)
+- **Pop2010** (total population count of the census tract)
+- All flag variables, such as **LA1and10** (flag for low access at 1 mile and 10 miles, urban and rural respectively)
+
+The following notable columns had minimal missing values (1% or less)
+
+- **PovertyRate**
+- **MedianFamilyIncome**
+- Population tract totals (for example, **TractBlack**, the total number of Black people in the population) have 0.1% missing
+
+Total population counts for low access exhibited many more missing values - between 20 and 50 percent, depending on the distance measure.
+
+Variables for low access and low income shared the same percentage of missing values as their low access only counterparts.
+
+Low access population counts split by demographic had significant missing values:
+
+| Variable category      | Missing % |
+|:-------------------------------------------------------------------|----------:|
+| Population counts and percentages beyond 1 mile from supermarket     | 27.56     |
+| Population counts and percentages beyond 10 miles from supermarket    | 89.16     |
+| Population counts and percentages beyond 20 miles from supermarket     | 97.92     |
+
+Filled records for these fields contained zeros. No clear pattern was found among the missing values.
+
+We suspect that these values were left blank if the Census Tract was smaller than the distance described in the variable.
+
+Corresponding flags are zero when the population count is not available.
+
+For the box plots featured in the following Exploratory Data Analysis, missing Median Family Income and Poverty Rates are imputed using their respective medians across all Census Tracts, while missing demographic population counts (for example, **TractBlack**) are replaced with zeros.
+
+## Data integration
+
+Two datasets were considered: the 2019 LRAM data and the newer
+2025 SNAP-authorized Retailer Access Map (SRAM) data. LRAM
+covers access to all supermarkets and large grocery stores for the whole
+population, while SRAM only covers SNAP-authorized retailers, a
+narrower population than we were interested in. LRAM was selected for this investigation.
+
+No other datasets were integrated for this project.
+
+
+# Ethics, Privacy and Security
+
+## Ethics
+
+Insights concerning specific demographics, particularly based on ethnicity, have the potential to reinforce biases about those demographics. For example, identifying a correlation between the proportion of Black residents in an area and lower income may contribute to existing stereotypes. Findings in this area must be presented with appropriate contextualisation, and an emphasis on systemic factors, rather than implying outcomes are a direct consequence of the demographic characteristics. 
+
+## Privacy concerns
+
+Every variable we use is a tract-level count, rate, or flag (e.g.
+PovertyRate, lablack1share, HUNVFlag) – there are no individual-level records (names, addresses,
+or household-level identifiers) anywhere in the dataset, so re-identification of a specific person is not
+a realistic risk.
+
+A handful of tracts have a very low population count, and theoretically could be traced back to individuals. Whenever these tracts are used, they will be aggregated into larger groups such as by State or Urban/Rural status, removing any concerns of traceability.
+
+## Security
+
+LRAM data is publicly available for personal use; steps do not need to be taken to secure the data itself.
+
+Analysis and findings can be stored securely in a private Github repository, only granting access to individuals working on the project. Devices that contain local copies of the code can be password-protected. The Github accounts of those with access can be made secure using SSH or other secure server connection protocol.
+
+# Exploratory Data Analysis
+
+```{r data-setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+library(patchwork)
+library(corrplot)
+library(maps)
+
+df <- read.csv(
+  "data/2019/2019_Food_Access_Research_Atlas_Data/Food Access Research Atlas.csv",
+  stringsAsFactors = FALSE,
+  na.strings = c("NA", "NULL", "")
+)
+
+num_vars <- c(
+  "Pop2010", "OHU2010", "LA1and10", "HUNVFlag", "Urban",
+  "PovertyRate", "MedianFamilyIncome", "TractLOWI", "lalowi1share",
+  "lawhite1share", "lablack1share", "laasian1share",
+  "lanhopi1share", "laaian1share", "laomultir1share", "lahisp1share",
+  "lakids1share", "laseniors1share", "TractKids", "TractSeniors",
+  "lahunv1share", "lasnap1share", "TractHUNV", "TractSNAP",
+  "GroupQuartersFlag"
+)
+for (v in num_vars) df[[v]] <- as.numeric(df[[v]])
+
+core_vars <- c("LA1and10", "PovertyRate", "MedianFamilyIncome", "Urban", "HUNVFlag")
+df <- df[complete.cases(df[, core_vars]), ]
+
+df <- df %>%
+  mutate(
+    black_share_plain = TractBlack / Pop2010,
+    kids_share_plain = TractKids / Pop2010,
+    seniors_share_plain = TractSeniors / Pop2010,
+    hunv_share_plain = TractHUNV / OHU2010
+  )
+df$LA1and10_f <- factor(df$LA1and10, labels = c("Not low access", "Low access"))
+df$Urban_f <- factor(df$Urban, labels = c("Rural", "Urban"))
+df$LILATracts_1And10_f <- factor(df$LILATracts_1And10,
+                                  labels = c("Not low income/access", "Low income/access"))
+```
+
+
+```{r cohen-chart, include=FALSE}
+#config
+path <- "data/2019/2019_Food_Access_Research_Atlas_Data/Food Access Research Atlas.csv" 
+boxplotdf <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE,
+               na.strings = c("NA", "NULL", ""))
+filter_geography <- "all"      # "all" | "urban" | "rural"
+filter_states    <- NULL       # NULL, or c("California", ...)
+
+scope_label <- paste0(
+  tools::toTitleCase(filter_geography), " tracts",
+  if (is.null(filter_states)) " - all states"
+  else paste0(" - ", paste(filter_states, collapse = ", ")))
+safe_name <- gsub("[^A-Za-z0-9]+", "_", scope_label)
+
+find_col <- function(data, target) {
+  hit <- names(data)[tolower(trimws(names(data))) == tolower(trimws(target))]
+  if (length(hit)) hit[1] else NA_character_
+}
+pop_col   <- find_col(boxplotdf, "POP2010")
+ohu_col   <- find_col(boxplotdf, "OHU2010")
+urban_col <- find_col(boxplotdf, "Urban")
+state_col <- find_col(boxplotdf, "State")
+
+#flags
+flag_wanted <- c(
+  "LA1and10", "LAhalfand10", "LA1and20",          # (A) low access
+  "LowIncomeTracts",                               # (B) low income
+  "LILATracts_1And10", "LILATracts_halfAnd10",     # (C) combined
+  "LILATracts_1And20")
+flag_map <- setNames(lapply(flag_wanted, find_col, data = boxplotdf), flag_wanted)
+flag_map <- flag_map[!is.na(flag_map)]
+flags    <- unlist(flag_map)
+
+pred_asis     <- c("PovertyRate", "MedianFamilyIncome")
+pred_popcount <- c("TractKids", "TractSeniors", "TractWhite", "TractBlack",
+                   "TractAsian", "TractHispanic")
+pred_hucount  <- c("TractSNAP", "TractHUNV")
+
+keep_meta <- c("CensusTract", state_col, urban_col, pop_col, ohu_col)
+keep_meta <- keep_meta[!is.na(keep_meta)]
+
+boxplotdf <- boxplotdf %>%
+  select(any_of(c(keep_meta, flags, pred_asis, pred_popcount, pred_hucount)))
+
+#filters
+n_before <- nrow(boxplotdf)
+if (filter_geography != "all") {
+  if (is.na(urban_col)) stop("No 'Urban' column for geography filter.")
+  urb  <- suppressWarnings(as.numeric(boxplotdf[[urban_col]]))
+  keep <- if (filter_geography == "urban") urb == 1 else urb == 0
+  boxplotdf   <- boxplotdf[keep %in% TRUE, ]
+}
+if (!is.null(filter_states)) {
+  if (is.na(state_col)) stop("No 'State' column for state filter.")
+  st  <- tolower(trimws(boxplotdf[[state_col]]))
+  boxplotdf  <- boxplotdf[st %in% tolower(trimws(filter_states)), ]
+}
+cat("Scope:", scope_label, "| rows:", n_before, "->", nrow(boxplotdf), "\n")
+if (nrow(boxplotdf) == 0) stop("No rows left after filtering.")
+
+#clean
+boxplotdf <- boxplotdf %>%
+  mutate(across(all_of(c(pred_asis, pred_popcount, pred_hucount,
+                         pop_col, ohu_col)), ~ suppressWarnings(as.numeric(.x))),
+         across(all_of(flags), ~ suppressWarnings(as.integer(.x))))
+
+pop_vec <- boxplotdf[[pop_col]]; ohu_vec <- boxplotdf[[ohu_col]]
+boxplotdf <- boxplotdf %>%
+  mutate(across(all_of(pred_popcount), ~ .x / pop_vec, .names = "{.col}_share"),
+         across(all_of(pred_hucount),  ~ .x / ohu_vec, .names = "{.col}_share"),
+         across(ends_with("_share"),
+                ~ ifelse(is.infinite(.x) | is.nan(.x), NA_real_, .x)))
+
+share_cols <- c(paste0(pred_popcount, "_share"), paste0(pred_hucount, "_share"))
+predictors <- c(pred_asis, share_cols)
+
+impute_median <- function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x)
+boxplotdf <- boxplotdf %>% mutate(across(all_of(predictors), impute_median))
+
+pretty <- c(PovertyRate = "Poverty rate",
+            MedianFamilyIncome = "Median family income",
+            TractKids_share = "% Kids (0-17)",
+            TractSeniors_share = "% Seniors (65+)",
+            TractWhite_share = "% White",
+            TractBlack_share = "% Black",
+            TractAsian_share = "% Asian",
+            TractHispanic_share = "% Hispanic",
+            TractSNAP_share = "% SNAP households",
+            TractHUNV_share = "% No-vehicle households")
+
+
+pred_groups <- list(
+  list(key = "ethnicity", label = "Ethnicity",
+       vars = c("TractWhite_share", "TractBlack_share",
+                "TractAsian_share", "TractHispanic_share"),
+       yfmt = "percent", ncol = 2),
+  list(key = "age", label = "Age group",
+       vars = c("TractKids_share", "TractSeniors_share"),
+       yfmt = "percent", ncol = 2),
+  list(key = "households", label = "Households",
+       vars = c("TractSNAP_share", "TractHUNV_share"),
+       yfmt = "percent", ncol = 2),
+  list(key = "income_poverty", label = "Median income & poverty",
+       vars = c("MedianFamilyIncome", "PovertyRate"),
+       yfmt = "comma", ncol = 2)
+)
+
+#box plot function
+# range_df (optional): data.frame(predictor, value) with the min/max each
+# predictor's y-axis should include, on top of whatever "flag"'s own No/Yes
+# data needs. Passing the same range_df to multiple calls (e.g. the three
+# ethnicity comparisons below) forces those facets onto matching y-axes,
+# so box-height differences between the three figures reflect real
+# effect-size differences rather than each figure auto-scaling to itself.
+#
+# Implemented as one small ggplot per predictor (coord_cartesian sets its
+# exact y-range) combined with patchwork, rather than a single faceted
+# plot with scales="free_y" -- combining free_y facets with an injected
+# geom_blank range and outlier.shape=NA turned out to make every facet's
+# range leak into every other facet (a ggplot2 layout quirk), so building
+# each panel independently sidesteps that entirely.
+# coord_cartesian() zooms the view without recomputing the scale's breaks
+# for the new (narrower) window, so ggplot's default breaks (picked for the
+# full, un-zoomed data range) can miss the panel's actual visible span
+# entirely. Recompute round-number ("nice") breaks from the true visible
+# range instead, so each panel still gets clean, evenly-stepped tens/round
+# numbers, just scaled to what's actually shown.
+nice_breaks <- function(rng) scales::extended_breaks()(rng)
+
+box_by_flag_group <- function(data, flag, family_label, grp, range_df = NULL) {
+  y_scale <- if (grp$yfmt == "percent") {
+    scale_y_continuous(labels = percent_format(accuracy = 1))
+  } else {
+    scale_y_continuous(labels = label_comma())
+  }
+
+  plot_df <- data %>%
+    transmute(.flag = factor(.data[[flag]], levels = c(0, 1),
+                             labels = c("No", "Yes")),
+              across(all_of(grp$vars))) %>%
+    filter(!is.na(.flag)) %>%
+    pivot_longer(all_of(grp$vars), names_to = "predictor", values_to = "value") %>%
+    mutate(predictor = factor(recode(predictor, !!!pretty),
+                              levels = unname(pretty[grp$vars])))
+
+  one_panel <- function(pred_lab) {
+    d <- plot_df %>% filter(predictor == pred_lab)
+    p <- ggplot(d, aes(.flag, value, fill = .flag)) +
+      geom_boxplot(outlier.shape = NA, width = 0.6, linewidth = 0.4) +
+      scale_fill_manual(values = c(No = "#965AC5", Yes = "#F4AF98")) +
+      # The "%" prefix on labels like "% White" is redundant here -- the
+      # y-axis itself is already formatted as a percentage -- so it's
+      # dropped from the panel title only (pred_lab itself is left alone,
+      # since it's still used as the lookup key into range_df etc. below).
+      labs(title = sub("^% ", "", pred_lab), x = NULL, y = NULL) +
+      theme_minimal(base_size = 11) +
+      theme(
+        legend.position = "none",
+        plot.title    = element_text(face = "bold", size = 11, hjust = 0.5,
+                                     margin = margin(b = 4)),
+        axis.text     = element_text(size = 9),
+        plot.margin   = margin(8, 10, 8, 10)
+      )
+    if (is.null(range_df)) {
+      p <- p + y_scale
+    } else {
+      # Fixed to the overall (flag-agnostic) whisker range only -- not
+      # unioned with this call's own data -- so the axis is genuinely
+      # identical across the three flag comparisons. A flag whose own
+      # spread happens to exceed the shared range gets its whiskers
+      # clipped at the edges rather than the axis re-expanding, since
+      # comparability across figures is the point here.
+      target <- range(range_df$value[range_df$predictor == pred_lab], na.rm = TRUE)
+      brks <- nice_breaks(target)
+      p <- p + coord_cartesian(ylim = target) +
+        (if (grp$yfmt == "percent")
+           scale_y_continuous(labels = percent_format(accuracy = 1), breaks = brks)
+         else
+           scale_y_continuous(labels = label_comma(), breaks = brks))
+    }
+    p
+  }
+
+  panels <- lapply(unname(pretty[grp$vars]), one_panel)
+  wrap_plots(panels, ncol = grp$ncol) +
+  plot_annotation(
+    title = paste0(family_label, ":  ", flag),
+    theme = theme(
+      plot.title = element_text(face = "bold", size = 14, hjust = 0.5)
+    )
+  )
+}
+
+family_of <- function(f) {
+  if (grepl("^LILATracts", f)) "LOW INCOME + LOW ACCESS"
+  else if (grepl("^LowIncome", f)) "LOW INCOME only"
+  else "LOW ACCESS only"
+}
+
+# cohen_d function
+cohen_d <- function(value, group01) {
+  g1 <- value[group01 == 1]; g0 <- value[group01 == 0]
+  n1 <- sum(!is.na(g1)); n0 <- sum(!is.na(g0))
+  if (n1 < 2 || n0 < 2) return(NA_real_)
+  sp <- sqrt(((n1 - 1) * var(g1, na.rm = TRUE) +
+              (n0 - 1) * var(g0, na.rm = TRUE)) / (n1 + n0 - 2))
+  (mean(g1, na.rm = TRUE) - mean(g0, na.rm = TRUE)) / sp
+}
+
+# Long table of d for every flag x predictor, with pretty labels + order.
+pred_order   <- unlist(lapply(pred_groups, function(g) g$vars), use.names = FALSE)
+pred_order_l <- unname(pretty[pred_order])          # display order (grouped)
+
+d_long <- do.call(rbind, lapply(flags, function(f) {
+  data.frame(flag      = unname(f),
+             family    = family_of(f),
+             predictor = predictors,
+             pred_lab  = recode(predictors, !!!pretty),
+             d         = vapply(predictors,
+                                function(p) cohen_d(boxplotdf[[p]], boxplotdf[[f]]), numeric(1)),
+             row.names = NULL, stringsAsFactors = FALSE)
+}))
+d_long$flag     <- factor(d_long$flag,     levels = unname(flags))
+d_long$pred_lab <- factor(d_long$pred_lab, levels = rev(pred_order_l))
+
+# --- Page: heatmap table (numbers printed in each cell) ---------------
+lim <- max(abs(d_long$d), na.rm = TRUE)
+lim <- if (!is.finite(lim) || lim == 0) 1 else lim
+lim <- ceiling(lim / 0.5) * 0.5  # round up to a clean 0.5 step so the legend's outer ticks land on a round number
+
+heat <- ggplot(d_long, aes(flag, pred_lab, fill = d)) +
+  geom_tile(colour = NA) +
+  geom_text(aes(label = sprintf("%.2f", d)),
+            colour = "black", size = 3.4, fontface = "bold") +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red",
+                       midpoint = 0, limits = c(-lim, lim),
+                       breaks = scales::breaks_width(0.5)(c(-lim, lim)),
+                       oob = scales::squish, name = NULL) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(
+    axis.text.x   = element_text(angle = 45, hjust = 1, vjust = 1,
+                                 size = 9),
+    axis.text.y   = element_text(size = 10, hjust = 1),
+    axis.ticks    = element_blank(),
+    panel.grid    = element_blank(),
+    legend.position = "right",
+    legend.text   = element_text(hjust = 1),
+    plot.margin   = margin(16, 20, 10, 16)
+  )
+
+# final plots
+get_group <- function(k)
+  pred_groups[[which(vapply(pred_groups, function(g) g$key == k, logical(1)))]]
+eth_grp <- get_group("ethnicity")
+ip_grp  <- get_group("income_poverty")
+
+# Shared y-axis range per ethnicity predictor (see box_by_flag_group's
+# range_df argument) -- computed once from the whole dataset, regardless
+# of flag, so the Low Access / Low Income / LILA ethnicity figures below
+# are directly comparable across pages.
+eth_range_df <- do.call(rbind, lapply(eth_grp$vars, function(v) {
+  bp <- boxplot.stats(boxplotdf[[v]])$stats
+  data.frame(predictor = pretty[[v]], value = c(bp[1], bp[5]))
+}))
+eth_range_df$predictor <- factor(eth_range_df$predictor,
+                                  levels = unname(pretty[eth_grp$vars]))
+```
+
+
+## Comparing medians of potential variables, split by various flag response variables
+
+```{r cohen-d-test, fig.width=7.5, fig.height=5, fig.align="default"}
+heat
+```
+
+```{=latex}
+\begin{center}
+```
+**Figure 1**: Differences in medians for potential explanatory variables, when split by different flags of interest e.g. Low Access at 1 and 10 miles, respectively.  
+```{=latex}
+\end{center}
+```
+
+Low Access alone (`LA1and10`, measuring at 1 mile for urban and 10 miles for rural) has the weakest effect sizes in the heatmap -- the largest observed difference in medians is in % Hispanic at d=-0.29.  
+
+Note that Poverty rate and % SNAP households have the biggest differences in medians of all variables under the flags that include low income as a criterion (e.g. `LowIncomeTracts`: Poverty rate d=1.96, % SNAP d=1.47) -- this is expected, since SNAP eligibility, poverty status, and the low income flag itself all use income as a defining measurement.
+
+Low Income Low Access (flags prefixed with `LILATracts_`) shows larger differences across multiple distance measures, even while disregarding Poverty Rate and % SNAP households  -- e.g. `LILATracts_1And10`  has % Black d=0.50, and % White d=-0.39.
+
+Restricting the distance considered for Urban census tracts from 1 mile to 1/2 mile (`LILATracts_1And10` -> `LILATracts_halfAnd10`) increases most effect sizes further (% Black 0.50 -> 0.71). 
+
+We'll examine Low Access, Low Income, and Low Income Low Access at half and 10 to further investigate differences.
+
+
+## Exploring Low Access by Ethnicity, Income, and Poverty Rates 
+
+```{r low-access-boxpots-ethnicity, fig.width=5.2, fig.height=2.9}
+ff <- unname("LAhalfand10")
+box_by_flag_group(boxplotdf, ff, family_of(ff), eth_grp, range_df = eth_range_df)
+```
+```{=latex}
+\begin{center}
+```
+**Figure 2.1**: Percentages of Census Tract populations that are various ethnicities. Census Tracts are split by Low access flags, measured at a 1/2 mile distance for Urban and 10 miles for Rural. Ethnicities are shown on different scales for visibility
+```{=latex}
+\end{center}
+```
+
+```{r low-access-boxpots-income, fig.width=5.2, fig.height=1.7}
+ff <- unname("LAhalfand10")
+box_by_flag_group(boxplotdf, ff, family_of(ff), ip_grp)
+```
+
+```{=latex}
+\begin{center}
+```
+**Figure 2.2**: Median Family Income and Poverty Rates of Census Tracts, split by Low access flags, measured at a 1/2 mile distance for Urban and 10 miles for Rural. 
+```{=latex}
+\end{center}
+```
+
+Ethnicity shows minimal differences in medians when separating Census Tracts by Low Access status at 1/2 and 10 miles -- the largest ethnicity effect is % Black at d=0.09, and % Hispanic is d=0.01 (Figure 1).
+
+Income and poverty rate are similarly weak (Poverty rate d=-0.09, Median income d=0.17): flagged tracts actually have slightly *higher* median income ($70.4k vs $66.1k) and slightly *lower* poverty (11.4% vs 13.0%) than non-flagged tracts. 
+
+## Exploring Low Income by Ethnicity
+
+```{r low-income-boxpots-ethnicity, fig.width=5.2, fig.height=2.9}
+ff <- unname("LowIncomeTracts")
+box_by_flag_group(boxplotdf, ff, family_of(ff), eth_grp, range_df = eth_range_df)
+```
+
+```{=latex}
+\begin{center}
+```
+**Figure 3**: Percentages of Census Tract populations that are various ethnicities. Census Tracts are split by **Low income** flags. Ethnicities are shown on different scales for visibility
+```{=latex}
+\end{center}
+```
+
+We see clearer patterns when investigating Low Income.
+
+% White shows the largest ethnicity effect of any predictor in this whole comparison (d=-0.97): median % White is 62.7% in tracts flagged as low income, vs 87.2% in non-flagged tracts.
+
+% Black (d=0.77) and % Hispanic (d=0.62) are similarly large, but the difference is in the opposite direction. This implies that tracts with larger Black and Hispanic populations are more likely to be flagged as low income, while tracts with larger White populations are less likely to be flagged as low income.
+
+There is a small difference (d=-0.15) in the percentage of Asians in the population, and the difference is in the *same* direction as % White (0.9% flagged vs 1.9% not). This implies that not all non-white populations necessarily correlate with lower income.
+
+## Exploring Low Income and Low Access (LILA) flags by Ethnicity
+
+```{r low-income-low-access-boxpots-ethnicity, fig.width=5.2, fig.height=2.9}
+ff <- unname("LILATracts_halfAnd10")
+box_by_flag_group(boxplotdf, ff, family_of(ff), eth_grp, range_df = eth_range_df)
+```
+```{=latex}
+\begin{center}
+```
+**Figure 4**: Percentages of Census Tract populations that are various ethnicities. Census Tracts are split by Low access **Low income** flags, measured at a 1/2 mile distance for Urban and 10 miles for Rural. Ethnicities are shown on different scales for visibility
+```{=latex}
+\end{center}
+```
+
+The combined flag for Low income and low access (measured at 1/2 mile for Urban and 1 mile for Rural) shows a clearer ethnicity disparity. These disparities are comparible to the differences in Census Tracts split by Low income alone implying that the correlation with combined Low Income and Low Access with ethnicity, when considering all Census Tracts, is primarily driven by the correlation between ethnicity and low income.
+
+## Exploring differences in Urban and Rural Census Tracts
+
+```{r poverty-income-by-urban, fig.width=5.2, fig.height=1.9}
+# Median family income is top-coded at $250,001 (Census convention) --
+# enough tracts sit exactly at that value that it doesn't always get
+# excluded as a Tukey outlier, so the axis was stretching to 250k and
+# squashing the real boxes into the bottom third. Whisker range across
+# the whole column tops out at $157k, so cap the view there (+ padding)
+# the same way the ethnicity panels are capped to their whisker range.
+p_income_urban <- ggplot(df, aes(LA1and10_f, MedianFamilyIncome, fill = LA1and10_f)) +
+  geom_boxplot(outlier.shape = NA, width = 0.6, linewidth = 0.4) +
+  facet_wrap(~ Urban_f) +
+  coord_cartesian(ylim = c(0, 165000)) +
+  scale_y_continuous(labels = label_comma()) +
+  scale_fill_manual(values = c(`Not low access` = "#965AC5", `Low access` = "#F4AF98")) +
+  labs(x = NULL, y = "Median family\nincome ($)", title = "MEDIAN FAMILY INCOME:  LA1and10") +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position = "none",
+    plot.title   = element_text(face = "bold", size = 14, hjust = 0.5),
+    strip.text   = element_text(face = "bold", size = 11,
+                                margin = margin(t = 3, b = 4)),
+    axis.text    = element_text(size = 9),
+    axis.title.y = element_text(size = 9),
+    plot.margin  = margin(8, 10, 8, 10)
+  )
+
+p_income_urban
+```
+```{=latex}
+\begin{center}
+```
+**Figure 5:** Median family income for Urban and Rural census Tracts, where Census Tracts are further split by Low access **Low income** flags, measured at a 1/2 mile distance for Urban and 10 miles for Rural.
+
+```{=latex}
+\end{center}
+```
+
+In rural tracts, we see that low access tracts exhibit lower median family incomes. This aligns with the trend we see when combining all census tracts.
+
+However, in Urban tracts this effect is reversed. This reversed effect may be caused by densely populated affluent suburban neighbourhoods that do not have a local grocery store. Additionally, this may explain the lack of noticeable difference in Median Income when grouping Urban and Rural together in Figure 2.2.
+
+## Exploring differences between States by Low Income and Low Access, Urban vs Rural
+
+```{r map2-setup, include=FALSE}
+
+# State abbreviations lookup
+state_abbrev <- data.frame(
+  state_full = tolower(state.name),
+  abbrev = state.abb
+)
+
+# The Northeast/Mid-Atlantic cluster (VT, NH, MA, RI, CT, NJ, DE, MD) is too
+# small and tightly packed for in-place labels to fit without overlapping.
+# Pull just those out to a stacked label column off the map's east edge,
+# connected back to their true centroid with a thin leader line -- the same
+# treatment commonly used on small printed US state maps.
+small_states <- c("vermont", "new hampshire", "massachusetts", "rhode island",
+                   "connecticut", "new jersey", "delaware", "maryland")
+small_label_pos <- data.frame(
+  region = small_states,
+  label_long = -65.5,
+  label_lat = c(45.6, 44.7, 43.8, 42.9, 42.0, 41.1, 40.2, 39.3)
+)
+
+# Proper polygon centroid (shoelace formula), not just mean(long)/mean(lat) --
+# a plain vertex average lands off-centre (or outside the state entirely) for
+# concave/multi-part shapes like Michigan's two peninsulas or Florida's
+# panhandle. For states made of several disconnected pieces (one `group`
+# each), keep only the largest piece by area so the label doesn't end up in
+# the ocean between them.
+polygon_centroid <- function(long, lat) {
+  x1 <- long
+  y1 <- lat
+  x2 <- c(long[-1], long[1])
+  y2 <- c(lat[-1], lat[1])
+  cross <- x1 * y2 - x2 * y1
+  area <- sum(cross) / 2
+  cx <- sum((x1 + x2) * cross) / (6 * area)
+  cy <- sum((y1 + y2) * cross) / (6 * area)
+  data.frame(long = cx, lat = cy, area = abs(area))
+}
+
+make_map_urban <- function(varname, title_text, urban_flag,
+                           lim_low = NULL, lim_high = NULL,
+                           label_color = "black") { ## changed
+
+  state_lowaccess <- df %>%
+    filter(Urban == urban_flag) %>%
+    group_by(State) %>%
+    summarise(
+      total_tracts = n(),
+      low_access_tracts = sum(.data[[varname]] == 1, na.rm = TRUE),
+      pct_low_access = low_access_tracts / total_tracts
+    ) %>%
+    mutate(state_full = tolower(State)) %>%
+    left_join(state_abbrev, by = "state_full")
+
+  us_states <- map_data("state")
+
+  map_df <- us_states %>%
+    left_join(state_lowaccess, by = c("region" = "state_full"))
+
+  piece_centroids <- map_df %>%
+    filter(!is.na(pct_low_access)) %>%
+    group_by(region, group) %>%
+    filter(n() >= 3) %>%
+    reframe(polygon_centroid(long, lat),
+            pct_low_access = first(pct_low_access),
+            abbrev = first(abbrev))
+
+  state_centroids <- piece_centroids %>%
+    group_by(region) %>%
+    slice_max(area, n = 1) %>%
+    ungroup()
+
+  centroid_normal <- state_centroids %>% filter(!region %in% small_states)
+  centroid_small <- state_centroids %>%
+    filter(region %in% small_states) %>%
+    left_join(small_label_pos, by = "region")
+
+  ggplot(map_df, aes(long, lat, group = group, fill = pct_low_access)) +
+    geom_polygon(color = "white") +
+    geom_text(
+      data = centroid_normal,
+      aes(x = long, y = lat, label = abbrev),
+      inherit.aes = FALSE,
+      color = label_color,
+      size = 2.6
+    ) +
+    geom_segment(
+      data = centroid_small,
+      aes(x = long, y = lat, xend = label_long, yend = label_lat),
+      inherit.aes = FALSE,
+      color = "grey40",
+      linewidth = 0.3
+    ) +
+    geom_text(
+      data = centroid_small,
+      aes(x = label_long, y = label_lat, label = abbrev),
+      inherit.aes = FALSE,
+      color = "black",
+      size = 2.3,
+      hjust = 0
+    ) +
+    scale_fill_viridis_c(
+      option = "plasma",
+      na.value = "grey90",
+      limits = c(lim_low, lim_high)
+    ) +
+    scale_x_continuous(expand = expansion(mult = c(0.02, 0.12))) +
+    coord_quickmap(clip = "off") +
+    labs(
+      title = title_text,
+      fill = "LILA rate (%)"
+    ) +
+    theme_minimal() +
+    theme(axis.title = element_blank(), axis.text = element_blank(),
+          axis.ticks = element_blank(), panel.grid = element_blank())
+}
+```
+
+
+```{r LILA_half10_side_by_side_fixed, fig.width=6.5, fig.height=6, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Urban map
+urban_map <- make_map_urban(
+  varname    = "LILATracts_halfAnd10",
+  title_text = "LILATracts_halfAnd10 — Urban Only",
+  urban_flag = 1
+) +
+  scale_fill_viridis_c(
+    option = "plasma",
+    na.value = "grey90",
+    limits = c(0, 0.65),
+    breaks = seq(0, 0.65, by = 0.1)
+  ) +
+  theme(
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 10),
+    plot.title = element_text(size = 11, face = "bold", hjust = 0.5)
+  )
+
+# Rural map — same overrides
+rural_map <- make_map_urban(
+  varname    = "LILATracts_halfAnd10",
+  title_text = "LILATracts_halfAnd10 — Rural Only",
+  urban_flag = 0,
+  label_color = "white"
+) +
+  scale_fill_viridis_c(
+    option = "plasma",
+    na.value = "grey90",
+    limits = c(0, 0.65),
+    breaks = seq(0, 0.65, by = 0.1)
+  ) +
+  theme(
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 10),
+    plot.title = element_text(size = 11, face = "bold", hjust = 0.5)
+  )
+
+urban_map / rural_map
+```
+
+
+```{=latex}
+\begin{center}
+```
+**Figure 6:** Rate of Low Income, Low Access flag (measured at 1/2 mile for Urban, 10 miles for rural) among Census Tracts, per State. Urban and rural CensusTracts are considered separately.
+```{=latex}
+\end{center}
+```
+
+- Urban areas exhibit a wider range of low income, low access rates between states.
+
+- Mississippi has a comparatively high rate of low-income, low-access areas in urban settings. This appears to be driven primarily by the **low-income factor**.
+
+- In urban areas, the Midwestern and Southern regions generally show higher rates of combined low-income and low-access. This pattern appears to reflect a combination of both **income and access factors**.
+
+- Wyoming performs comparatively well, which appears to be driven largely by **higher income levels**
+
+- Rural areas generally demonstrate more favourable outcomes. This appears to be driven primarily by **relatively good access within the 10-mile measurement threshold**, rather than by income levels.
+
+- Arizona and New Mexico perform comparatively poorly in rural areas. This may be in part due to their predominantly desert landscapes and resulting population sparsity, hence having a worse measurement at the 10 mile threshold. Additionally, Rural areas in both states have relatively high rates of low income, further exacerbating the difference when compared to other states.
+
+## Summary of Key Findings
+
+- We see evidence that Low Access is correlated with Median Family income, once split by Urban and Rural. More specifically, for Urban areas, Low Access is more likely in more affluent Census Tracts, whereas for Rural areas Low Access is more likely in poorer Census Tracts
+- Ethnicity shows almost no relationship with Low Access by distance alone; the correlation emerges when considering Low Income and Low Access combined, suggesting the correlation is primarily driven by income.
+- We observe variations by State on the combined Low Income and Low Access flags (1/2 mile for Urban and 10 miles for Rural), with Urban areas showing a wider range between states than Rural. Explanations vary: some states have lower average incomes, while for others (particularly rural Arizona and New Mexico) geography may explain the difference observed between these States and others.
+- More noticeable correlations between Ethnicity and Low Access may be present when considering specific locations, or by separating Urban and Rural. This is a potential area for further research. 
+
+
+
+
+
+# Individual Contributions
+
+
+Data Preparation work was equally shared, with outliers and missing values found and discussed during group sessions.
+
+Each group member completed their own analysis, and findings were shared amongst the group to establish next steps, and to decide which findings were most relevant to include in the final report.
+
+The division of work to write and structure the final report is described in the following table:
+
+
+| Member                    | | Report contribution                               |
+|:--------------------------|:-------------------------------------|
+| Loren Whithair | Writing the report findings and figure labels, general proofreading | 
+| Nancy Busto | Write and integrate code for Figure 6 (map) | 
+| Hamid Mehmood | Write and integrate code for boxplots |
+| Leon Cai | Overall formatting, file structure, and wording improvements | 
+
+Key insights and the conclusion were discussed and agreed upon as a group.
+
+## Disclosure: AI usage
+
+Different students used different AI tools; Claude, Copilot, and ChatGPT were all used.
+<!-- todo: references for the AI tools? -->
+
+AI was used to:
+- scan all available data to provide suggestions for further investigation in the EDA process,
+- generate initial drafts of each key insight explanation (these were improved by the students),
+- make technical changes to graph displays, and
+- to improve the overall report formatting
+
+All AI outputs were reviewed by the group for accuracy.
+
+# References
+
+Economic Research Service, U.S. Department of Agriculture. (2019).
+*Food Access Research Atlas: Large Retailer Access Map (LRAM)
+documentation*.
+https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation

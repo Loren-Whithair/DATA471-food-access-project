@@ -1,0 +1,79 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+.RDataTmp
+
+# User-specific files
+.Ruserdata
+
+# Example code in package build process
+*-Ex.R
+
+# Output files from R CMD build
+/*.tar.gz
+
+# Output files from R CMD check
+/*.Rcheck/
+
+# RStudio files
+.Rproj.user/
+
+# produced vignettes
+vignettes/*.html
+vignettes/*.pdf
+
+# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
+.httr-oauth
+
+# knitr and R markdown default cache directories
+*_cache/
+/cache/
+
+# Temporary files created by R markdown
+*.utf8.md
+*.knit.md
+
+# R Environment Variables
+.Renviron
+
+# pkgdown site
+docs/
+
+# translation temp files
+po/*~
+
+# RStudio Connect folder
+rsconnect/
+
+
+# Large raw/derived files that are easy to regenerate locally and don't
+# need to live in git
+data/2019/FoodAccessResearchAtlasData2019.xlsx
+data/2019/lram_cleaned.csv
+data/2019/lram_cleaned.rds
+
+# Diagnostic byproducts from cleaning_shared.R -- not used by
+# group_report.Rmd, easy to regenerate by rerunning run_all.R
+figures/cleaning_log.txt
+figures/cleaning_missing_by_corevar.csv
+figures/bar_missing_by_corevar.png
+
+# Local resource folder pandoc creates alongside a knitted .Rmd
+group_report_files/
+
+# Historical archive data (2006/2010/2015) - not part of this project's
+# scope (2019 LRAM only), and the 2010/2015 xlsx files alone are 28MB
+# and 74MB.
+data/achieves/
+
+# LaTeX build intermediates
+*.aux
+*.log
+*.out
+*.fdb_latexmk
+*.fls
+.DS_Store
+group_report.pdf
