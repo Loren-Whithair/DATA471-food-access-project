@@ -73,7 +73,7 @@ df <- df %>%
     TractKids_share, TractSeniors_share, 
     TractWhite_share, TractBlack_share, TractAsian_share, TractNHOPI_share, TractAIAN_share, TractOMultir_share, TractHispanic_share
   ) %>% 
-  filter(!is.na(TractKids))
+  filter(!is.na(TractKids), State != "Hawaii") # Hawaii ethnicity distributions are quite different 
 
 
 View(df)
