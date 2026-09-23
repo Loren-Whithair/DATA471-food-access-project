@@ -91,11 +91,41 @@ fit4 <- glm(
     # TractHispanic_share*Urban_f +
     TractAsian_share*Urban_f 
     + TractWhite_share * TractKids_share * Urban_f # adding this makes other things way more significant...
-    + TractKids_share*TractBlack_share * Urban_fx
+    + TractKids_share * TractBlack_share * Urban_f
   ,   
   family="binomial",
   data=df
 )
+
+fit5 <- glm(
+  LILATracts_halfAnd10_f ~ 
+    # Urban_f +
+    # ethnicity + age
+    # TractKids_share +
+    # TractSeniors_share +
+    # TractWhite_share + 
+    # TractBlack_share + 
+    # TractHispanic_share + 
+    # TractAsian_share +
+    # interaction vars: urban +
+    # TractKids_share*Urban_f + 
+    # TractSeniors_share*Urban_f +
+    # TractWhite_share*Urban_f +
+    # TractBlack_share*Urban_f +
+    # TractHispanic_share*Urban_f +
+    # TractAsian_share*Urban_f 
+  + TractWhite_share * TractKids_share * Urban_f # adding this makes other things way more significant...
+  + TractKids_share * TractBlack_share #* Urban_f
+  + TractKids_share * TractHispanic_share #* Urban_f
+  + TractKids_share * TractAsian_share #* Urban_f
+  
+  
+  ,   
+  family="binomial",
+  data=df
+)
+
+exp(summary(fit5)$coeff)
 
 plot(fit4) # first value is fitted vs residuals
 # qq plot too - how similar something is to a normal distribution (quantile plot)
