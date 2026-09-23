@@ -91,11 +91,31 @@ fit4 <- glm(
     # TractHispanic_share*Urban_f +
     TractAsian_share*Urban_f 
     + TractWhite_share * TractKids_share * Urban_f # adding this makes other things way more significant...
-    + TractKids_share*TractBlack_share * Urban_f
+    + TractKids_share*TractBlack_share * Urban_fx
   ,   
   family="binomial",
   data=df
 )
+
+plot(fit4) # first value is fitted vs residuals
+# qq plot too - how similar something is to a normal distribution (quantile plot)
+# but for logistic regression not necessarily a correct assumption
+
+# confusion matrix to indicate model fit - or could show R^2
+
+# NOTES:
+# statistically significant - also loook at size
+
+## residuals - look at fittedv sresiduals
+# .fitted shows the log odds values 
+
+# look for non-linearity - that would say that the way that we've modelled it doesn't represent the true models
+# often logging the predictors can help
+
+
+# can pick out 
+# is the plot linear?
+#
 
 summary(fit3)
 summary(fit4) # without white*kids interaction
