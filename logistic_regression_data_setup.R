@@ -58,6 +58,23 @@ df <- df %>%
     TractHispanic_share = TractHispanic / Pop2010
   )
 
+# compute populations as percentages
+df <- df %>%
+  mutate(
+    TractLOWI_perc = TractLOWI_share * 100,
+    TractKids_perc = TractKids_share * 100,
+    TractSeniors_perc = TractSeniors_share * 100,
+    TractWhite_perc = TractWhite_share * 100,
+    TractBlack_perc = TractBlack_share * 100,
+    TractAsian_perc = TractAsian_share * 100,
+    TractNHOPI_perc = TractNHOPI_share * 100,
+    TractAIAN_perc = TractAIAN_share * 100,
+    TractOMultir_perc = TractOMultir_share * 100,
+    TractHispanic_perc = TractHispanic_share * 100
+  )
+
+View(df)
+
 df <- df %>% 
   select(
     CensusTract, State, County,  # identifying info
@@ -69,9 +86,12 @@ df <- df %>%
     TractKids, TractSeniors, 
     TractWhite, TractBlack, TractAsian, TractNHOPI, TractAIAN, TractOMultir, TractHispanic, 
     # TractHUNV, TractSNAP, 
-    TractLOWI_share,
-    TractKids_share, TractSeniors_share, 
-    TractWhite_share, TractBlack_share, TractAsian_share, TractNHOPI_share, TractAIAN_share, TractOMultir_share, TractHispanic_share
+    # TractLOWI_share,
+    # TractKids_share, TractSeniors_share, 
+    # TractWhite_share, TractBlack_share, TractAsian_share, TractNHOPI_share, TractAIAN_share, TractOMultir_share, TractHispanic_share
+    TractLOWI_perc,
+    TractKids_perc, TractSeniors_perc, 
+    TractWhite_perc, TractBlack_perc, TractAsian_perc, TractNHOPI_perc, TractAIAN_perc, TractOMultir_perc, TractHispanic_perc
   ) %>% 
   filter(!is.na(TractKids), State != "Hawaii") # Hawaii ethnicity distributions are quite different 
 

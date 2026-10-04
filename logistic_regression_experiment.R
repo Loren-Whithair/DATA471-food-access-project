@@ -9,28 +9,27 @@ head(df)
 
 # fit a logistic regression model
 
+View(df)
 
-plot(df$TractBlack_share, df$TractKids_share)
-plot(df$TractBlack_share, df$TractSeniors_share)
 
 # TODO: what is the reference ethnicity?
 colnames(df)
 fit <- glm(
   LILATracts_halfAnd10_f ~ 
     Urban_f +
-    TractKids_share + 
-    TractSeniors_share +
-    TractWhite_share + 
-    TractBlack_share + 
-    TractHispanic_share + 
-    TractAsian_share +
+    TractKids_perc + 
+    TractSeniors_perc +
+    TractWhite_perc + 
+    TractBlack_perc + 
+    TractHispanic_perc + 
+    TractAsian_perc +
     # interaction vars w Urban
-    TractKids_share*Urban_f + 
-    TractSeniors_share*Urban_f +
-    TractWhite_share*Urban_f + 
-    TractBlack_share*Urban_f + 
-    TractHispanic_share*Urban_f + 
-    TractAsian_share*Urban_f,
+    TractKids_perc*Urban_f + 
+    TractSeniors_perc*Urban_f +
+    TractWhite_perc*Urban_f + 
+    TractBlack_perc*Urban_f + 
+    TractHispanic_perc*Urban_f + 
+    TractAsian_perc*Urban_f,
   family="binomial",
   
   data=df
@@ -42,26 +41,25 @@ summary(fit) # raw values
 exp((summary(fit)$coeff[,"Estimate"])) # exponentiating to turn it into odds
 
 
-
 fit2 <- glm(
   LILATracts_halfAnd10_f ~ 
     Urban_f +
     # ethnicity + age
-    TractKids_share +
-    TractSeniors_share +
-    TractWhite_share +
-    TractBlack_share + 
-    TractHispanic_share + 
-    TractAsian_share +
+    TractKids_perc +
+    TractSeniors_perc +
+    TractWhite_perc +
+    TractBlack_perc + 
+    TractHispanic_perc + 
+    TractAsian_perc +
     # interaction vars: urban +
-    TractKids_share*Urban_f + 
-    TractSeniors_share*Urban_f +
-    TractWhite_share*Urban_f + 
-    TractBlack_share*Urban_f + 
-    TractHispanic_share*Urban_f + 
-    TractAsian_share*Urban_f
+    TractKids_perc*Urban_f + 
+    TractSeniors_perc*Urban_f +
+    TractWhite_perc*Urban_f + 
+    TractBlack_perc*Urban_f + 
+    TractHispanic_perc*Urban_f + 
+    TractAsian_perc*Urban_f
   # +
-    # TractWhite_share*TractKids_share # adding this makes other things way more significant... multicollinearity? 
+    # TractWhite_perc*TractKids_perc # adding this makes other things way more significant... multicollinearity? 
   ,
   family="binomial",
   
@@ -77,21 +75,21 @@ fit4 <- glm(
   LILATracts_halfAnd10_f ~ 
     # Urban_f +
     # ethnicity + age
-    # TractKids_share +
-    TractSeniors_share +
-    # TractWhite_share + 
-    TractBlack_share + 
-    # TractHispanic_share + 
-    TractAsian_share +
+    # TractKids_perc +
+    TractSeniors_perc +
+    # TractWhite_perc + 
+    TractBlack_perc + 
+    # TractHispanic_perc + 
+    TractAsian_perc +
     # interaction vars: urban +
-    TractKids_share*Urban_f + 
-    TractSeniors_share*Urban_f +
-    # TractWhite_share*Urban_f +
-    # TractBlack_share*Urban_f +
-    # TractHispanic_share*Urban_f +
-    TractAsian_share*Urban_f 
-    + TractWhite_share * TractKids_share * Urban_f # adding this makes other things way more significant...
-    + TractKids_share * TractBlack_share * Urban_f
+    TractKids_perc*Urban_f + 
+    TractSeniors_perc*Urban_f +
+    # TractWhite_perc*Urban_f +
+    # TractBlack_perc*Urban_f +
+    # TractHispanic_perc*Urban_f +
+    TractAsian_perc*Urban_f 
+    + TractWhite_perc * TractKids_perc * Urban_f # adding this makes other things way more significant...
+    + TractKids_perc * TractBlack_perc * Urban_f
   ,   
   family="binomial",
   data=df
@@ -101,23 +99,23 @@ fit5 <- glm(
   LILATracts_halfAnd10_f ~ 
     # Urban_f +
     # ethnicity + age
-    # TractKids_share +
-    # TractSeniors_share +
-    # TractWhite_share + 
-    # TractBlack_share + 
-    # TractHispanic_share + 
-    # TractAsian_share +
+    # TractKids_perc +
+    # TractSeniors_perc +
+    # TractWhite_perc + 
+    # TractBlack_perc + 
+    # TractHispanic_perc + 
+    # TractAsian_perc +
     # interaction vars: urban +
-    # TractKids_share*Urban_f + 
-    # TractSeniors_share*Urban_f +
-    # TractWhite_share*Urban_f +
-    # TractBlack_share*Urban_f +
-    # TractHispanic_share*Urban_f +
-    # TractAsian_share*Urban_f 
-  + TractWhite_share * TractKids_share * Urban_f # adding this makes other things way more significant...
-  + TractKids_share * TractBlack_share #* Urban_f
-  + TractKids_share * TractHispanic_share #* Urban_f
-  + TractKids_share * TractAsian_share #* Urban_f
+    # TractKids_perc*Urban_f + 
+    # TractSeniors_perc*Urban_f +
+    # TractWhite_perc*Urban_f +
+    # TractBlack_perc*Urban_f +
+    # TractHispanic_perc*Urban_f +
+    # TractAsian_perc*Urban_f 
+  + TractWhite_perc * TractKids_perc * Urban_f # adding this makes other things way more significant...
+  + TractKids_perc * TractBlack_perc * Urban_f
+  + TractKids_perc * TractHispanic_perc * Urban_f
+  + TractKids_perc * TractAsian_perc * Urban_f
   
   
   ,   
@@ -125,6 +123,7 @@ fit5 <- glm(
   data=df
 )
 
+summary(fit5)
 exp(summary(fit5)$coeff)
 
 plot(fit4) # first value is fitted vs residuals
@@ -165,11 +164,11 @@ df$model_prob <- predict(model, df, type="response")
 df <- df %>% mutate(model_pred = 1*(model_prob > .5) + 0)
 
 
-plot(df$TractWhite_share, df$TractKids_share)
+plot(df$TractWhite_perc, df$TractKids_perc)
 
 
 #
-ggplot(fit4) + geom_point(aes(y=.fitted, x=TractWhite_share), size=0.2) + theme(text = element_text(size=16))
+ggplot(fit4) + geom_point(aes(y=.fitted, x=TractWhite_perc), size=0.2) + theme(text = element_text(size=16))
 
 # look at partial residuals
 regressinator::partial_residuals(fit4) |>
