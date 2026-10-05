@@ -95,6 +95,8 @@ fit4 <- glm(
   data=df
 )
 
+summary(fit4)
+
 fit5 <- glm(
   LILATracts_halfAnd10_f ~ 
     # Urban_f +
