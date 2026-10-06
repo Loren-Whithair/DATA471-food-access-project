@@ -62,7 +62,6 @@ influence the location of supermarkets, such as local governments and supermarke
 
 
 
-# Description of the FARA dataset
 
 # Description of the FARA dataset
 
