@@ -22,6 +22,8 @@ TODO: properly write up in report style
 library(tidyr)
 library(dplyr)
 library(ggplot2)
+library(car)
+library(patchwork)
 ```
 
 ## Analysis techniques used
@@ -44,12 +46,14 @@ library(ggplot2)
 - converted to a percentage of total population (out of 100)
   - makes it easier to fit the model, each on similar scale (population varies wildly)
 - took the logarithm of those percentages + 1 (log(x+1))
-  - data is very skewed for most demographic info: e.g. % asian is typically around 10%
+  - data is very skewed for most demographic info: e.g. % asian is typically around 10%. Makes sense conceptually to take log
+  - this is why % white was not used
+  - model fit on logged data had lower AIC than model fit on normal data (65k vs 69k), so seems like better fit
   - some values effectively 0, log 0 is undefined and log(x), x<1, is negative. Helps with the scaling
 
 - certain data was removed:
   - remove Hawaii and Alaska: ethnicity skew completely different (geographical + cultural). Allow us to better predict for main area (TODO: COMMENT ON ETHICS)
-  - remove those where Population < 150. Note if population < 100 then 1 person is 1%, hard to compare these small areas with much larger ones (10,000)
+  - remove those where Population < 150. Note if population < 100 then 1 person is 1%, hard to compare these small areas with much larger ones (10,000) TODO: comment on who this excludes, future research
   - a couple of remaining outliers with surprising demographic information (extremes based on skews). Some influence on data but not massive, found better fit without them. still plenty of data from those locations without them.
 
 > Explain what you did to account for missing data
@@ -188,7 +192,8 @@ Choices made:
 - used %white as reference level
   - largest % in most CensusTracts, so skewed the other way to all other vars. Model was more interpretable without it
 - %kids focussed on rather than %seniors; not exhaustive but inversely proportional. Variance inflation factor was very high for %seniors, so picked %kids
-- including interaction terms between age + ethnicity were tried; either coefficients were insignificant, or only significant if done on ALL ethnicity combinations + Urban/Rural. Model too large to interpret and effects too small to gain insight
+- including interaction terms between age + ethnicity (% kids and TractBlack) were tried; either coefficients were insignificant, or only significant if done on ALL ethnicity combinations + Urban/Rural. Model too large to interpret and effects too small to gain insight
+- just looking at TractKids didn't provide much insight; focussed on ethnicity demographics
 - Start off with all ethnicities, Urban/Rural, and interaction terms between all ethnicities and urban/rural. The Urban/Rural interaction with ethnicities that were insignificant (p > 0.001)
 
 
@@ -197,46 +202,29 @@ Choices made:
 # commented out interaction terms were insignificant
 model <- glm(
   LILATracts_halfAnd10_f ~
-    l_TractKids_perc
-      # * Urban_f
-  # +
-  #   l_TractSeniors_perc
-  #     * Urban_f
-  +
+    l_TractKids_perc +
     l_TractAsian_perc 
       * Urban_f
   + l_TractHispanic_perc 
       * Urban_f
   + l_TractNHOPI_perc 
-      #* Urban_f
   + l_TractAIAN_perc 
       * Urban_f
   + l_TractOMultir_perc 
       * Urban_f
   + l_TractBlack_perc 
-      # * TractKids_perc
-      # * Urban_f
   + l_TractAsian_perc 
-      # * TractKids_perc
-      # * Urban_f
   + l_TractHispanic_perc 
-      # * l_TractKids_perc 
-      # * Urban_f
-  
+
   , family="binomial"
-  # , data=df
-  , data=lr.data.clean # first lot of very clear outliers, based on abnormal demographic %s
+  , data=lr.data.clean # outliers removed in data setup 
 )
 
 summary(model)
 ```
 
 ```{r outliers}
-library(car)
 influencePlot(model)
-```
-```{r outliers2}
-View(lr.data.clean[c(64301, 63692,11127),])
 ```
 
 ```{r model_fit}
@@ -247,7 +235,64 @@ summary(model)
 ```{r resid}
 plot(model, which=1)
 ```
+## Residuals and model fit
 
+- model is the right type of fit: see that the correlations between input and response vars are linear (figure below)
+
+```{r fitted_vs_inputs}
+p1 <- ggplot(lr.out, 
+       aes(
+         x=l_TractBlack_perc,
+         y=model.fitted
+       )) +
+  geom_point(
+    alpha=0.1,
+    colour=
+  ) + labs(
+    x="Percentage of tract that is black (natural log of adjusted value)",
+    y="Fitted model value"
+  ) +
+  geom_abline(slope= 0.15,
+              intercept=0.0,
+              colour="black",
+              size=1
+  ) + theme_minimal() +
+  scale_colour_brewer(palette = "Set1")
+
+p2 <- ggplot(
+  lr.out, aes(x=l_TractHispanic_perc, y=model.fitted, colour=Urban_f
+  )) +
+  geom_point(
+    alpha=0.1
+  ) + labs(
+    x="Percentage of tract that is Hispanic (natural log of adjusted value)",
+    y="Fitted model value",
+    colour="Population Density type"
+  ) + 
+  geom_abline(slope= 0.05,
+              intercept=0.1,
+              colour="black",
+              size=1
+  ) + 
+  geom_abline(slope= 0.001,
+              intercept=0.05,
+              colour="black",
+              size=1
+  ) +
+  theme_minimal() + 
+  scale_colour_brewer(palette = "Set1") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+p1 + p2
+```
+
+```{=latex}
+\begin{center}
+```
+**Figure TODO**: Comparisons of inputs and fitted values of the model.  
+```{=latex}
+\end{center}
+```
 
 # Conclusions and Recommendations
 
