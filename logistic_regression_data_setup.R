@@ -5,24 +5,24 @@ library(ggplot2)
 #----------------------
 # Basic data setup (from group report)
 
-df <- read.csv(
+lr.data <- read.csv(
   "data/2019/2019_Food_Access_Research_Atlas_Data/Food Access Research Atlas.csv",
   stringsAsFactors = FALSE,
   na.strings = c("NA", "NULL", "")
 )
 
-df <- as_tibble(df)
+lr.data <- as_tibble(lr.data)
 
 # Convert CensusTract to character:
-data$CensusTract <- as.character(data$CensusTract)
+lr.data$CensusTract <- as.character(lr.data$CensusTract)
 
 # Convert Urban/Rural to factor, with Urban as reference
-df$Urban_f <- factor(df$Urban, levels=c(1,0), labels = c("Urban", "Rural"))
+lr.data$Urban_f <- factor(lr.data$Urban, levels=c(1,0), labels = c("Urban", "Rural"))
 
 
 
 # Response variable
-df$LILATracts_halfAnd10_f <- factor(df$LILATracts_halfAnd10,
+lr.data$LILATracts_halfAnd10_f <- factor(lr.data$LILATracts_halfAnd10,
                                     levels=c(0,1),
                                     labels = c("Not low income/access", "Low income/access"))
 
@@ -38,13 +38,13 @@ num_vars <- c(
   "TractKids", "TractSeniors",
   "TractWhite", "TractBlack", "TractAsian", "TractNHOPI", "TractAIAN","TractOMultir", "TractHispanic"
 )
-for (v in num_vars) df[[v]] <- as.numeric(df[[v]])
+for (v in num_vars) lr.data[[v]] <- as.numeric(lr.data[[v]])
 
 # core_vars <- c("LA1and10", "PovertyRate", "MedianFamilyIncome", "Urban", "HUNVFlag")
-# df <- df[complete.cases(df[, core_vars]), ]
+# lr.data <- lr.data[complete.cases(lr.data[, core_vars]), ]
 
 # compute populations as percentages
-df <- df %>%
+lr.data <- lr.data %>%
   mutate(
     TractLOWI_share = TractLOWI / Pop2010,
     TractKids_share = TractKids / Pop2010,
@@ -59,7 +59,7 @@ df <- df %>%
   )
 
 # compute populations as percentages
-df <- df %>%
+lr.data <- lr.data %>%
   mutate(
     TractLOWI_perc = TractLOWI_share * 100,
     TractKids_perc = TractKids_share * 100,
@@ -73,9 +73,7 @@ df <- df %>%
     TractHispanic_perc = TractHispanic_share * 100
   )
 
-View(df)
-
-df <- df %>% mutate(
+lr.data <- lr.data %>% mutate(
   l_TractSeniors_perc = log1p(TractSeniors_perc),
   l_TractKids_perc = log1p(TractKids_perc),
   l_TractWhite_perc = log1p(TractWhite_perc),
@@ -87,7 +85,7 @@ df <- df %>% mutate(
   l_TractOMultir_perc = log1p(TractOMultir_perc)
 )
 
-df <- df %>% 
+lr.data <- lr.data %>% 
   select(
     CensusTract, State, County,  # identifying info
     LILATracts_halfAnd10_f, LILATracts_halfAnd10, # response var
@@ -112,8 +110,8 @@ df <- df %>%
   filter(
     !is.na(TractKids), 
     !(State %in% c("Hawaii", "Alaska")), # Hawaii ethnicity distributions are notably different 
-    Pop2010 >= 150
+    Pop2010 >= 150 # removes most extreme skews (percentage-based)
   ) 
 
-View(df)
+View(lr.data)
 
