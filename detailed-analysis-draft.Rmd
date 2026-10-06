@@ -1,6 +1,6 @@
 ---
-title: "Data471 EDA Project"
-author: "Group 21: Loren Whithair, Nancy Grace Busto, Hamid Mehmood, Leon Cai"
+title: "Data471 Detailed Analysis Draft"
+author: "Loren Whithair"
 date: "`r Sys.Date()`"
 output:
   pdf_document:
@@ -17,16 +17,52 @@ knitr::opts_chunk$set(echo = FALSE, fig.align = "center")
 
 # Detailed Data Analysis
 
+TODO: properly write up in report style
 ```{r detailed_analysis_libraries}
 library(tidyr)
 library(dplyr)
 library(ggplot2)
 ```
 
+## Analysis techniques used
+
+> Explain what analysis techniques you used, and why they were suitable for the data and for the question you needed to answer.
+
+- Logistic regression
+- binary response, probability of being low income low access
+- coefficients describe relationship between predictor var and response
+- allows us to compare impact of different variables on binary yes/no is it low income low access
+
+
+## Data manipulation
+
+> Explain steps you took to manipulate the data, e.g. converting to logarithmic scale, standardizing continuous vars
+
+
+- Urban converted to a factor, so that it will be treated as categorical
+- Demographic info (TractBlack, TractKids etc,) did the following:
+- converted to a percentage of total population (out of 100)
+  - makes it easier to fit the model, each on similar scale (population varies wildly)
+- took the logarithm of those percentages + 1 (log(x+1))
+  - data is very skewed for most demographic info: e.g. % asian is typically around 10%
+  - some values effectively 0, log 0 is undefined and log(x), x<1, is negative. Helps with the scaling
+
+- certain data was removed:
+  - remove Hawaii and Alaska: ethnicity skew completely different (geographical + cultural). Allow us to better predict for main area (TODO: COMMENT ON ETHICS)
+  - remove those where Population < 150. Note if population < 100 then 1 person is 1%, hard to compare these small areas with much larger ones (10,000)
+  - a couple of remaining outliers with surprising demographic information (extremes based on skews). Some influence on data but not massive, found better fit without them. still plenty of data from those locations without them.
+
+> Explain what you did to account for missing data
+
+- those missing one key response var (TractKids), were missing ALL of them (TractBlack, TractWhite, etc) so just removed them (very small % of data, still have 70,000+ records)
+- flags where the population equivalent is zero were included; allowed for more data on smaller areas. Data isn't technically "missing". Might make correlations + their p value weaker?
+
+
 ```{r detailed_analysis_setup}
 
 #----------------------
 # Basic data setup (from group report)
+set.seed(1899)
 
 lr.data <- read.csv(
   "data/2019/2019_Food_Access_Research_Atlas_Data/Food Access Research Atlas.csv",
@@ -129,14 +165,44 @@ lr.data <- lr.data %>%
   ) 
 
 lr.data.clean <- filter(lr.data, !(CensusTract %in% c(
-  "4001942700", "48365950500" # abnormally large  demographic %s, Hispanic / AIAN
+  "4001942700", "48365950500" # abnormally large  demographic %s, Hispanic / AIAN # TODO: how much influence do they have?
   ,"48341950200"
   )))
+
 ```
 
+
+
+## The model
+> Specify the full list of terms included in any model you fit, i.e. list the features or explanatory variables and any transformations you applied to them or any interactions between them
+
+
+Notes on other models fit:
+
+
+
+TODO: list all terms included in the final model. 
+
+
+Choices made:
+- used %white as reference level
+  - largest % in most CensusTracts, so skewed the other way to all other vars. Model was more interpretable without it
+- %kids focussed on rather than %seniors; not exhaustive but inversely proportional. Variance inflation factor was very high for %seniors, so picked %kids
+- including interaction terms between age + ethnicity were tried; either coefficients were insignificant, or only significant if done on ALL ethnicity combinations + Urban/Rural. Model too large to interpret and effects too small to gain insight
+- Start off with all ethnicities, Urban/Rural, and interaction terms between all ethnicities and urban/rural. The Urban/Rural interaction with ethnicities that were insignificant (p > 0.001)
+
+
+
 ```{r model_build}
+# commented out interaction terms were insignificant
 model <- glm(
   LILATracts_halfAnd10_f ~
+    l_TractKids_perc
+      # * Urban_f
+  # +
+  #   l_TractSeniors_perc
+  #     * Urban_f
+  +
     l_TractAsian_perc 
       * Urban_f
   + l_TractHispanic_perc 
@@ -161,22 +227,27 @@ model <- glm(
   # , data=df
   , data=lr.data.clean # first lot of very clear outliers, based on abnormal demographic %s
 )
+
+summary(model)
 ```
 
+```{r outliers}
+library(car)
+influencePlot(model)
+```
+```{r outliers2}
+View(lr.data.clean[c(64301, 63692,11127),])
+```
 
 ```{r model_fit}
 summary(model)
 ```
 
-```{r resid}
-plot(fit.l, which=1)
-```
-```{r fitted_vs_input}
-# fit_v_input <- function(pred="")
-#   
-#   
 
+```{r resid}
+plot(model, which=1)
 ```
+
 
 # Conclusions and Recommendations
 
