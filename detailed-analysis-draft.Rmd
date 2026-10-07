@@ -65,7 +65,6 @@ library(patchwork)
 ```{r detailed_analysis_setup}
 
 #----------------------
-# Basic data setup (from group report)
 set.seed(1899)
 
 lr.data <- read.csv(
@@ -292,6 +291,99 @@ p1 + p2
 **Figure TODO**: Comparisons of inputs and fitted values of the model.  
 ```{=latex}
 \end{center}
+```
+
+
+## Input var coefficients
+
+```{r coef_setup}
+ci <- confint(model) # must take exponent of this too!
+beta <- summary(model)$coeff
+```
+
+### odds coefficients
+
+```{r coef_analysis}
+summary(model)
+```
+
+```{r coef_analysis}
+exp(beta)
+```
+
+Urban vs rural: rural is less likely to be LILA (62% to 48% less likely, 95% CI, p-value = 2e-16).
+This could  be a consequence of measurement (different distances). More interesting is Urban/Rural as interaction term.
+
+
+**Note on log increases**:
+used natural log of percentage. Means that increases at lower values have larger impact than increase at higher values
+(e.g. log(2) - log(1) == log(20) - log(10))
+An increase from 10% to 20% is roughly equal in impact to an increase from 1% to 2%
+
+Also, number of actual people depends on total population size:
+
+```{r pop_violin}
+
+
+```
+
+**l_TractKids_perc**
+
+Odds decrease with more children in the population, 23% less per log unit increase.
+However cannot say anything in more detail; didn't make parsimonious model with low enough p-value for interaction terms w %kids.
+
+We don't know what % of those children are in each demographic (e.g. 70% White, 10% children, doesn't necessarily mean 7% white children)
+Potential for further analysis
+
+**Tract Asian perc**: 
+
+main effect is negative
+- 63% less likely for 1 unit log increase in urban areas (1-2, or 10-20)
+- In rural areas, even greater impact: 0.37 * 0.24 = 0.087, 91.% less likely per 1 unit log increase
+
+
+**TractBlack_perc**
+
+1.5x more likely to be low income low acces for each log unit increase of TractBlack (95% CI (1.47, 1.52), p-value 2e-16).
+
+No significant difference found between Urban and Rural areas for this effect (p-value too low). Cannot say there's a difference.
+
+In other words, worse off in both! 
+
+TODO: comment on scale, how many ppl this would actually be. 
+TODO: typical range?
+
+**TractOMultir_perc**
+
+Largest impact: TractOMultir (multi-racial) had biggest effect: 3.3x (TODO: CI, p-value) more likely per 1 unit log increase.
+inverse effect in rural areas: 0.8x as likely (i.e. 20% less likely)
+
+encompasses "other" races (i.e. not White, black, native american, asian, hawaiian, pacific islander) AND multi-racial.
+
+Cannot say which has the biggest effect, cannot say if distribution is different between urban and rural. limit interpretation
+
+Can say they are a minority (non-white, not exclusively white) and that this significantly increases likelihood in Urban areas
+
+TODO: comment on actual values, # of people needed
+
+```{r compare_ranges}
+print("Range of % black:")
+print(range(lr.data.clean$TractBlack_perc))
+print("Range of % multiracial: ")
+print(range(lr.data.clean$TractOMultir_perc))
+```
+```{r hist_black}
+hist(lr.data.clean$TractBlack)
+```
+
+```{r hist_multi}
+hist(lr.data.clean$TractOMultir)
+```
+
+### confidence intervals
+
+```{r ci_analysis}
+exp(ci)
 ```
 
 # Conclusions and Recommendations

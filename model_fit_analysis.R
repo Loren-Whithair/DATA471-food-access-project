@@ -7,10 +7,7 @@ library(ggplot2)
 summary(model)
 
 
-### robustness
-
-
-
+# robustness -------------
 
 # nrow(lr.data.clean)
 # length(predict(model))
@@ -92,17 +89,30 @@ ggplot(
   guides(colour = guide_legend(override.aes = list(alpha = 1)))
 
 
-
-
-
   
-# show a couple of these, show that they're linear
-plot(
-  
-  lr.data.clean$l_TractBlack_perc,
-  fitted(model)
-  # ,
-  # alpha=0.5
-)
+# coefficient interpretation ------------
+
+summary(model)
+ci <- confint(model) # must take exponent of this too!
+beta <- summary(model)$coeff
+
+# the odds are x times more / less
+exp(cf)
 
 
+
+
+
+
+hist(lr.data.clean$TractBlack_perc)
+hist(lr.data.clean$TractHispanic_perc)
+hist(lr.data.clean$TractAsian_perc)
+hist(lr.data.clean$TractWhite_perc)
+
+hist(lr.data.clean$TractOMultir_perc) # less of a tail, does this have an effect on why it's biggest?
+
+
+
+
+mean(lr.data.clean$TractBlack_perc)
+var(lr.data.clean$TractBlack_perc)
