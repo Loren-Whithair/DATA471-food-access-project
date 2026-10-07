@@ -180,12 +180,21 @@ lr.data.clean <- filter(lr.data, !(CensusTract %in% c(
 > Specify the full list of terms included in any model you fit, i.e. list the features or explanatory variables and any transformations you applied to them or any interactions between them
 
 
-Notes on other models fit:
+The response variable is **Low Income, Low Access, at 1/2 and 10 miles (LILATractshalfAnd10)*. It is a flag for if the Census Tract is low access and a significant number of people in the census tract (at least 500 people, or at least 33%) are more than 1/2 mile or 10 miles from a supermarket, for Urban and Rural respectively.
 
+Response variables that are taken as % of total pop, converted to log scale:
 
+- %kids
+- %asian
+- %hispanic
+- %nhopi (native hawaiian and other pasific islander)
+- %aian (american indian and alaska native)
+- %omultir (other races, or identifying as multiple races)
+- %black
 
-TODO: list all terms included in the final model. 
+The flag for whether the Cesus Tract is Urban or Rural was included as a response too.
 
+More detailed information on measurement methods can be found in the Large Retail Access Map Reference Guide (2).
 
 Choices made:
 - used %white as reference level
@@ -212,8 +221,8 @@ model <- glm(
   + l_TractOMultir_perc 
       * Urban_f
   + l_TractBlack_perc 
-  + l_TractAsian_perc 
-  + l_TractHispanic_perc 
+  # + l_TractAsian_perc 
+  # + l_TractHispanic_perc 
 
   , family="binomial"
   , data=lr.data.clean # outliers removed in data setup 
@@ -296,12 +305,33 @@ p1 + p2
 
 ## Input var coefficients
 
+```{r hist_fn}
+make_hist <- function(var, xlab, xmin=0, xmax=100) {
+  ggplot(lr.data.clean, aes(x= {{ var }})) +
+    geom_histogram() +
+    labs(
+      x=xlab,
+      y= "Number of Census Tracts",
+      title="Ethnicity percentages in Urban and Rural Census Tracts"
+    ) +
+    xlim(xmin, xmax) +
+    facet_wrap(~Urban_f) +
+    theme_minimal() +
+    theme(
+      panel.border=element_rect(colour="grey",size=0.2)
+    )
+    
+}
+
+# # test
+make_hist(TractBlack_perc, "% Black")
+```
+
 ```{r coef_setup}
 ci <- confint(model) # must take exponent of this too!
 beta <- summary(model)$coeff
 ```
 
-### odds coefficients
 
 ```{r coef_analysis}
 summary(model)
@@ -311,21 +341,38 @@ summary(model)
 exp(beta)
 ```
 
-Urban vs rural: rural is less likely to be LILA (62% to 48% less likely, 95% CI, p-value = 2e-16).
-This could  be a consequence of measurement (different distances). More interesting is Urban/Rural as interaction term.
-
 
 **Note on log increases**:
 used natural log of percentage. Means that increases at lower values have larger impact than increase at higher values
 (e.g. log(2) - log(1) == log(20) - log(10))
 An increase from 10% to 20% is roughly equal in impact to an increase from 1% to 2%
 
-Also, number of actual people depends on total population size:
+Also, number of actual people depends on total population size.
 
 ```{r pop_violin}
-
-
+ggplot(lr.data.clean) +
+  geom_violin(aes(x=Urban_f, y=Pop2010)) + 
+  labs(
+    title= "Frequency of different Population Sizes among Census Tracts",
+    x="Population of Census Tract",
+    y="Frequency"
+  ) +
+  theme_minimal() 
 ```
+
+
+
+### General:
+
+- urban_f not interesting on it's own
+- tractblack worse in both areas (no interaction w urban+rural)
+- tractAIAN bad in urban, worse 
+
+**Urban_f**
+
+Urban vs rural: rural is less likely to be LILA (62% to 48% less likely, 95% CI, p-value = 2e-16).
+This could  be a consequence of measurement (different distances). More interesting is Urban/Rural as interaction term.
+
 
 **l_TractKids_perc**
 
@@ -341,22 +388,52 @@ main effect is negative
 - 63% less likely for 1 unit log increase in urban areas (1-2, or 10-20)
 - In rural areas, even greater impact: 0.37 * 0.24 = 0.087, 91.% less likely per 1 unit log increase
 
-
 **TractBlack_perc**
 
 1.5x more likely to be low income low acces for each log unit increase of TractBlack (95% CI (1.47, 1.52), p-value 2e-16).
 
 No significant difference found between Urban and Rural areas for this effect (p-value too low). Cannot say there's a difference.
 
-In other words, worse off in both! 
+In other words, odds increase in similar fashion in both types of region. 
 
 TODO: comment on scale, how many ppl this would actually be. 
 TODO: typical range?
 
+**Tract Hispanic perc**
+
+1.6x LESS likely in urban?
+
+40% less likely in urban areas per hispanic % unit log increase
+
+1.3x more likely in rural areas per hispanic % unit log increase
+
+
+Urban: 0.6x as likely (goes down)
+Rural: 1.3x as likely (goes up) odds are DOUBLED in rural area compared to 
+
+OR can explain as:
+40% less likely
+30% more likely
+
+
+Why different direction?
+
+```{r hispanic_boxplots}
+ggplot(lr.data.clean) +
+  geom_boxplot(aes(y=TractHispanic_perc, x=Urban_f)) +
+  # facet_wrap(~Urban_f) +
+  theme_minimal()
+```
+
+Potentially due to skew of data urban vs rural? Could be reflection of 
+
+
+
 **TractOMultir_perc**
 
 Largest impact: TractOMultir (multi-racial) had biggest effect: 3.3x (TODO: CI, p-value) more likely per 1 unit log increase.
-inverse effect in rural areas: 0.8x as likely (i.e. 20% less likely)
+
+inverse effect in rural areas: 0.8x as likely (i.e. 20% less likely). Howeve
 
 encompasses "other" races (i.e. not White, black, native american, asian, hawaiian, pacific islander) AND multi-racial.
 
@@ -366,18 +443,53 @@ Can say they are a minority (non-white, not exclusively white) and that this sig
 
 TODO: comment on actual values, # of people needed
 
+```{r omultir_stats}
+lr.data.clean %>%
+  group_by(Urban_f) %>%
+  summarise(
+    mean_pop = mean(Pop2010),
+    mean= mean(TractOMultir_perc),
+    min= min(TractOMultir_perc),
+    max= max(TractOMultir_perc)
+  )
+```
+
+``` {r omultir_actual_vals}
+
+
+```
+
+```{r omultir_hist}
+make_hist(TractOMultir_perc, "% Other / Multiple Races", xmax=60)
+```
+
+**TractAIAN_perc** (native american, alaskan)
+
+1.51x more likely per % logged in urban areas (CI!) 
+
+Worse in rural: extra 1.3224789 x more likely (total of 1.9x more likely)
+
+```{r }
+```
+
+
+
+
 ```{r compare_ranges}
 print("Range of % black:")
 print(range(lr.data.clean$TractBlack_perc))
 print("Range of % multiracial: ")
 print(range(lr.data.clean$TractOMultir_perc))
 ```
+
 ```{r hist_black}
 hist(lr.data.clean$TractBlack)
 ```
 
 ```{r hist_multi}
-hist(lr.data.clean$TractOMultir)
+ggplot(lr.data.clean)+
+  geom_histogram(aes(x=TractOMultir)) +facet_wrap(~Urban_f) + theme_minimal()
+# hist(lr.data.clean$TractOMultir)
 ```
 
 ### confidence intervals
@@ -388,12 +500,15 @@ exp(ci)
 
 # Conclusions and Recommendations
 
-TODO
+- Conclusion: black, 
 
 
 # References
 
-Economic Research Service, U.S. Department of Agriculture. (2019).
-*Food Access Research Atlas: Large Retailer Access Map (LRAM)
-documentation*.
+(1) Economic Research Service, U.S. Department of Agriculture. (2019).
+*Food Access Research Atlas: Large Retailer Access Map (LRAM) documentation*.
 https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
+
+
+(2) *Food Access Research Atlas - Large Retailer Access Map Reference Guide*
+https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation/large-retailer-access-map-reference-guide
