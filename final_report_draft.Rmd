@@ -877,23 +877,29 @@ p1 + pa / pb
 
 ## Interpreting the model
 
-All presented tables are effects of % changes on a logarithmic scale. That is, the effect of an increase in a demographic from 1% to 2% is equatable to the effect of 
+All presented tables are direct effects on the odds (i.e. the exponent of the raw coefficient) of % changes on a **logarithmic scale**. This means that increases from lower values are more impactful than increases from higher values: the effect of an increase in a demographic from 1% to 2% is of equal magnitude than an increase in a demographic from 10% to 20%.
 
 ```{r make_hist_fun}
-make_hist <- function(var, xlab, xmin=0, xmax=100) {
-  ggplot(lr.data.clean, aes(x= {{ var }})) +
+make_hist <- function(var, xlab, xmax=100, ymax = NA) {
+  hst <- ggplot(lr.data.clean, aes(x= {{ var }})) +
     geom_histogram() +
     labs(
       x=xlab,
       y= "Number of Census Tracts",
       title="Ethnicity percentages in Urban and Rural Census Tracts"
     ) +
-    xlim(xmin, xmax) +
+    xlim(NA, xmax) +
     facet_wrap(~Urban_f) +
     theme_minimal() +
     theme(
       panel.border=element_rect(colour="grey",size=0.2)
     )
+  
+  if (!is.na(ymax)){
+    hst <- hst  + ylim(NA, ymax)
+  }
+  
+  hst
 }
 ```
 
@@ -930,7 +936,7 @@ urban_rownames <- c(
   "l_TractAsian_perc"    = "% Asian",
   "l_TractHispanic_perc" = "% Hispanic",
   "l_TractNHOPI_perc"    = "% Hawaiian/Other Pacific Islander",
-  "l_TractAIAN_perc"     = "% Native America/Alaska Native",
+  "l_TractAIAN_perc"     = "% Native American/Alaska Native",
   "l_TractOMultir_perc"  = "% Multiracial/Other",
   "l_TractBlack_perc"    = "% Black"
 )
@@ -939,7 +945,7 @@ rural_rownames <- c(
   "Urban_fRural"                       = "Baseline effect compared to Urban",
   "l_TractAsian_perc:Urban_fRural"     = "% Asian (Rural)",
   "Urban_fRural:l_TractHispanic_perc"  = "% Hispanic (Rural)",
-  "Urban_fRural:l_TractAIAN_perc"      = "% Native America/Alaska Native (Rural)",
+  "Urban_fRural:l_TractAIAN_perc"      = "% Native American/Alaska Native (Rural)",
   "Urban_fRural:l_TractOMultir_perc"   = "% Multiracial/Other (Rural)"
 )
 
@@ -949,13 +955,13 @@ rownames(results_rural) <- rural_rownames[rownames(results_rural)]
 
 ```{r urban_table, }
 results_urban %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption = "Urban areas")
+  mutate(across(where(is.numeric), ~ round(.x, 2))) #%>% kable(caption = "Demographic effects on odds in Urban Census Tracts")
 ```
 
 
 ```{r rural_table}
 results_rural %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Additional effect in Rural areas")
+  mutate(across(where(is.numeric), ~ round(.x, 2))) #%>% kable(caption="Additional Demographic effects on odds in Rural Census Tracts")
 ```
 
 
@@ -971,12 +977,57 @@ results_combined <- data.frame(
 rownames(results_combined) <- rownames(results_rural)
 
 results_combined %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Overall effect in Rural areas")
+  slice(-1) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 2))) #%>% kable(caption="Overall effect of demographics on odds in Rural Census Tracts (equal to Urban effect times additional Rural effect)")
 
 ```
 
 
 #### Discussion
+
+#### Children
+Table 2 shows that Rural Census Tracts are 55% less likely to be labelled as Low Income, Low Access than Urban Census Tracts (0.45, 95% CI (0.38, 0.52), p-value < 2e-16). This may be a consequence of inequities between Population Density types, but it may also be a consequence of our choice of distances for Urban and Rural areas in our response varaible.
+
+There is a negative relationship with **% Kids** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 23% less likely to be Low Income, Low Access per increase in % Kids on the logarithmic scale (0.77, 95% CI (0.73, 0.81), p-value < 2e-16). No statistically significant difference was found in Rural areas, and so this term was not included in the final model.
+
+#### Negative relationships of ethnicities
+There is a negative relationship between **% Asian** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 63% less likely to be Low Income, Low Access per increase in % Asian on the logarithmic scale (0.37, 95% CI (0.36, 0.38), p-value < 2e-16). Tables 2 and 3 show the negative relationship of % Asian is greater in Rural Census Tracts, which are 91% less likely per increase in % Asian on the logarithmic scale (additional effect in Rural Census Tracts is 0.24, 95% CI (0.18, 0.31), p-value < 2e-16).
+
+#### Positive relationships of ethnicities 
+In contrast, there is a positive relationship with **% Black** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 50% more likely to be Low Income, Low Access per increase in % Black on the logarithmic scale (1.50, 95% CI (1.48, 1.52), p-value < 2e-16). No statistically significant difference was found in Rural areas, and so this term was not included in the final model.
+
+The spike to the left in Figure (TODO) shows that % Black of a Census Tract is most commonly between 0 and 10%. For a Census Tract with the median total population size of approximately 4000, an 1% increase would equate to 40 people. Note that an increase from 10% to approximately 29% corresponds to a 1 unit increase on our logarithmically transformed scale ($\log(10 + 1) + 1 \approx \log(28.9 + 1)$), a difference of 19%. A extra 760 Black people, when comparing an average sized Census Tract with 10% Black people to a similar sized Census Tract, would therefore result in a 50% increase in odds of being Low Income, Low Access. 
+
+Similar in size to % Black, a positive relationship was found with **% Native American/Alaska Native** in Urban areas (1.51, 95% CI (1.42, 1.60), p-value < 2e-16). However, in contrast to % Black, the effect of Native American/Alaska Native is considerably larger in Rural areas a nearly 100% increase in odds on the logarithmic scale (additional multiplicative effect of 1.32, 95% CI (1.21, 1.45), p-value = 6.32e-10). 
+
+Census Tracts more frequently have a much lower percentage of Native American/Alaska Native individuals than Black individuals (Figure TODO). Due to the logarithmic scale, differences in percentages closer to 0 have a greater impact; in an average sized Census Tract even less Native American/Alaska Natives may represent a difference in the odds of being Low Income, Low Access.
+
+
+```{r hist_black}
+make_hist(TractBlack_perc, "% Black") 
+# + make_hist(TractAIAN_perc, "% Native American / Alaska Native", ymax= 1.5E4) 
+```
+
+
+```{r hist_aian}
+make_hist(TractAIAN_perc, "% Native American / Alaska Native")
+
+```
+
+#### Mixed relationships, Urban vs Rural
+
+In 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -985,6 +1036,7 @@ results_combined %>%
 
 TODO
 
+- % kids, explore more
 
 # References
 
@@ -996,6 +1048,8 @@ https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
 
 # Appendix
 
+
+TODO: old model including interaction terms that were ultimately excluded
 ```{r exp_beta}
 # exp(beta)
 summary(model)
