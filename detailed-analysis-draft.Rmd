@@ -24,6 +24,7 @@ library(dplyr)
 library(ggplot2)
 library(car)
 library(patchwork)
+library(MASS)
 ```
 
 ## Analysis techniques used
@@ -67,23 +68,23 @@ library(patchwork)
 #----------------------
 set.seed(1899)
 
-lr.data <- read.csv(
+all.data <- read.csv(
   "data/2019/2019_Food_Access_Research_Atlas_Data/Food Access Research Atlas.csv",
   stringsAsFactors = FALSE,
   na.strings = c("NA", "NULL", "")
 )
 
-lr.data <- as_tibble(lr.data)
+all.data <- as_tibble(all.data)
 
 # Convert CensusTract to character:
-lr.data$CensusTract <- as.character(lr.data$CensusTract)
+all.data$CensusTract <- as.character(all.data$CensusTract)
 
 # Convert Urban/Rural to factor, with Urban as reference
-lr.data$Urban_f <- factor(lr.data$Urban, levels=c(1,0), labels = c("Urban", "Rural"))
+all.data$Urban_f <- factor(all.data$Urban, levels=c(1,0), labels = c("Urban", "Rural"))
 
 
 # Response variable
-lr.data$LILATracts_halfAnd10_f <- factor(lr.data$LILATracts_halfAnd10,
+all.data$LILATracts_halfAnd10_f <- factor(all.data$LILATracts_halfAnd10,
                                     levels=c(0,1),
                                     labels = c("Not low income/access", "Low income/access"))
 
@@ -95,13 +96,11 @@ num_vars <- c(
   "TractKids", "TractSeniors",
   "TractWhite", "TractBlack", "TractAsian", "TractNHOPI", "TractAIAN","TractOMultir", "TractHispanic"
 )
-for (v in num_vars) lr.data[[v]] <- as.numeric(lr.data[[v]])
+for (v in num_vars) all.data[[v]] <- as.numeric(all.data[[v]])
 
-# core_vars <- c("LA1and10", "PovertyRate", "MedianFamilyIncome", "Urban", "HUNVFlag")
-# lr.data <- lr.data[complete.cases(lr.data[, core_vars]), ]
 
-# compute populations as percentages
-lr.data <- lr.data %>%
+# compute populations as shares
+lr.data <- all.data %>%
   mutate(
     TractLOWI_share = TractLOWI / Pop2010,
     TractKids_share = TractKids / Pop2010,
@@ -115,7 +114,7 @@ lr.data <- lr.data %>%
     TractHispanic_share = TractHispanic / Pop2010
   )
 
-# compute populations as percentages
+# compute shares as percentages
 lr.data <- lr.data %>%
   mutate(
     TractLOWI_perc = TractLOWI_share * 100,
@@ -130,6 +129,7 @@ lr.data <- lr.data %>%
     TractHispanic_perc = TractHispanic_share * 100
   )
 
+# compute logarithmic data
 lr.data <- lr.data %>% mutate(
   l_TractSeniors_perc = log1p(TractSeniors_perc),
   l_TractKids_perc = log1p(TractKids_perc),
@@ -146,7 +146,7 @@ lr.data <- lr.data %>%
   select(
     CensusTract, State, County,  # identifying info
     LILATracts_halfAnd10_f, LILATracts_halfAnd10, # response var
-    # predictor + supporting vars
+    # explanatory and supporting variables
     Pop2010,
     Urban, Urban_f,
     ## demographic as total count
@@ -168,12 +168,12 @@ lr.data <- lr.data %>%
   ) 
 
 lr.data.clean <- filter(lr.data, !(CensusTract %in% c(
-  "4001942700", "48365950500" # abnormally large  demographic %s, Hispanic / AIAN # TODO: how much influence do they have?
-  ,"48341950200"
+  "4001942700", "48365950500" # abnormally large demographic %s, Hispanic / AIAN # TODO: how much influence do they have?
+  # ,"48341950200"
   )))
 
+lr.data.clean <- lr.data
 ```
-
 
 
 ## The model
@@ -221,8 +221,6 @@ model <- glm(
   + l_TractOMultir_perc 
       * Urban_f
   + l_TractBlack_perc 
-  # + l_TractAsian_perc 
-  # + l_TractHispanic_perc 
 
   , family="binomial"
   , data=lr.data.clean # outliers removed in data setup 
@@ -233,6 +231,13 @@ summary(model)
 
 ```{r outliers}
 influencePlot(model)
+```
+```{r outliers_x}
+lr.data.clean[c(64301, 64693),]
+# lr.data.clean[c(64300),] # 48341950200, Texas, Moore County
+
+studres(model)
+
 ```
 
 ```{r model_fit}
@@ -418,6 +423,8 @@ OR can explain as:
 
 Why different direction?
 
+Something to do with skew urban vs rural:
+
 ```{r hispanic_boxplots}
 ggplot(lr.data.clean) +
   geom_boxplot(aes(y=TractHispanic_perc, x=Urban_f)) +
@@ -426,8 +433,6 @@ ggplot(lr.data.clean) +
 ```
 
 Potentially due to skew of data urban vs rural? Could be reflection of 
-
-
 
 **TractOMultir_perc**
 
@@ -439,25 +444,53 @@ encompasses "other" races (i.e. not White, black, native american, asian, hawaii
 
 Cannot say which has the biggest effect, cannot say if distribution is different between urban and rural. limit interpretation
 
-Can say they are a minority (non-white, not exclusively white) and that this significantly increases likelihood in Urban areas
+Can say they are a minority (non-white, not exclusively white) and that this significantly increases likelihood in Urban areas, slightly reduces in rural.
+
+Change in direction could be due to variety of things: the actual races / split between other and multi may be different in these areas.
+See boxplot below: skewed way further to 0 for rural than urban, could be consequence of logarithmic scaling (don't see effects )
+
+i.e. wouldn't say it's a representation of a real-world phenomenon, more probably a consequence of the model.
 
 TODO: comment on actual values, # of people needed
+
+
+```{r omultir_boxplot}
+ggplot(lr.data.clean) +
+  geom_boxplot(aes(y=TractOMultir_perc, x=Urban_f)) +
+  scale_color_brewer(palette="Set1") +
+  theme_minimal()
+```
+```{r omultir_boxplot_totals}
+ggplot(lr.data.clean) +
+  geom_boxplot(aes(y=TractOMultir, x=Urban_f)) +
+  scale_color_brewer(palette="Set1") +
+  theme_minimal()
+```
+
+
+```{r barplot_urban_rural}
+ggplot(lr.data.clean) +
+  geom_bar(aes(x=Urban_f), fill="tomato") +
+  labs(x="Population Density Type", y="Number of Census Tracts", title="Urban vs Rural Census Tracts") +
+  theme_minimal()
+```
+
 
 ```{r omultir_stats}
 lr.data.clean %>%
   group_by(Urban_f) %>%
   summarise(
     mean_pop = mean(Pop2010),
-    mean= mean(TractOMultir_perc),
-    min= min(TractOMultir_perc),
-    max= max(TractOMultir_perc)
+    mean_multi_perc= mean(TractOMultir_perc),
+    min_multi_perc= min(TractOMultir_perc),
+    max_multi_perc= max(TractOMultir_perc),
+    
+    mean_multi= mean(TractOMultir),
+    min_multi= min(TractOMultir),
+    max_multi= max(TractOMultir)
   )
 ```
 
-``` {r omultir_actual_vals}
-
-
-```
 
 ```{r omultir_hist}
 make_hist(TractOMultir_perc, "% Other / Multiple Races", xmax=60)
@@ -467,9 +500,34 @@ make_hist(TractOMultir_perc, "% Other / Multiple Races", xmax=60)
 
 1.51x more likely per % logged in urban areas (CI!) 
 
-Worse in rural: extra 1.3224789 x more likely (total of 1.9x more likely)
+Even worse in rural: extra 1.3224789 x more likely (total of 1.9x more likely)
 
-```{r }
+```{r laomultir}
+
+p1 <- all.data %>%
+  filter(Urban_f =="Urban") %>%
+  mutate(
+    # la_omulti_perc = safe_divide(laomultir1, TractOMultir)
+    la_omulti_perc = laomultir1/TractOMultir
+    ) %>%
+  ggplot() +
+  geom_histogram(aes(x=la_omulti_perc)) + 
+  # xlim(0,100) +
+    labs(title="Urban", y="% of omultir that are LA")
+
+
+p2 <- all.data %>%
+  filter(Urban_f =="Rural") %>%
+  mutate(
+    # la_omulti_perc = safe_divide(laomultir1, TractOMultir)
+    la_omulti_perc = laomultir1/TractOMultir
+    ) %>%
+  ggplot() +
+  geom_histogram(aes(x=la_omulti_perc)) + 
+  # xlim(0,100) +
+    labs(title="Rural", y="% of omultir that are LA")
+
+p1 + p2
 ```
 
 

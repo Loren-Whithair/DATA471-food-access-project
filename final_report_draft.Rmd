@@ -62,7 +62,6 @@ influence the location of supermarkets, such as local governments and supermarke
 
 
 
-
 # Description of the FARA dataset
 
 
@@ -577,7 +576,243 @@ Differences emerge in demographic percentages in Figure 3 that are not present i
 
 # Detailed Data Analysis
 
-TODO
+```{r detailed_analysis_setup}
+
+#----------------------
+set.seed(1899)
+
+all.data <- read.csv(
+  "data/2019/2019_Food_Access_Research_Atlas_Data/Food Access Research Atlas.csv",
+  stringsAsFactors = FALSE,
+  na.strings = c("NA", "NULL", "")
+)
+
+all.data <- as_tibble(all.data)
+
+# Convert CensusTract to character:
+all.data$CensusTract <- as.character(all.data$CensusTract)
+
+# Convert Urban/Rural to factor, with Urban as reference
+all.data$Urban_f <- factor(all.data$Urban, levels=c(1,0), labels = c("Urban", "Rural"))
+
+
+# Response variable
+all.data$LILATracts_halfAnd10_f <- factor(all.data$LILATracts_halfAnd10,
+                                    levels=c(0,1),
+                                    labels = c("Not low income/access", "Low income/access"))
+
+# Relevant numerical variables
+num_vars <- c(
+  "Pop2010", "OHU2010",
+  "PovertyRate", "MedianFamilyIncome", 
+  "TractLOWI",
+  "TractKids", "TractSeniors",
+  "TractWhite", "TractBlack", "TractAsian", "TractNHOPI", "TractAIAN","TractOMultir", "TractHispanic"
+)
+for (v in num_vars) all.data[[v]] <- as.numeric(all.data[[v]])
+
+
+# compute populations as shares
+lr.data <- all.data %>%
+  mutate(
+    TractLOWI_share = TractLOWI / Pop2010,
+    TractKids_share = TractKids / Pop2010,
+    TractSeniors_share = TractSeniors / Pop2010,
+    TractWhite_share = TractWhite / Pop2010,
+    TractBlack_share = TractBlack / Pop2010,
+    TractAsian_share = TractAsian / Pop2010,
+    TractNHOPI_share = TractNHOPI / Pop2010,
+    TractAIAN_share = TractAIAN / Pop2010,
+    TractOMultir_share = TractOMultir / Pop2010,
+    TractHispanic_share = TractHispanic / Pop2010
+  )
+
+# compute shares as percentages
+lr.data <- lr.data %>%
+  mutate(
+    TractLOWI_perc = TractLOWI_share * 100,
+    TractKids_perc = TractKids_share * 100,
+    TractSeniors_perc = TractSeniors_share * 100,
+    TractWhite_perc = TractWhite_share * 100,
+    TractBlack_perc = TractBlack_share * 100,
+    TractAsian_perc = TractAsian_share * 100,
+    TractNHOPI_perc = TractNHOPI_share * 100,
+    TractAIAN_perc = TractAIAN_share * 100,
+    TractOMultir_perc = TractOMultir_share * 100,
+    TractHispanic_perc = TractHispanic_share * 100
+  )
+
+# compute logarithmic data
+lr.data <- lr.data %>% mutate(
+  l_TractSeniors_perc = log1p(TractSeniors_perc),
+  l_TractKids_perc = log1p(TractKids_perc),
+  l_TractWhite_perc = log1p(TractWhite_perc),
+  l_TractBlack_perc = log1p(TractBlack_perc),
+  l_TractHispanic_perc = log1p(TractHispanic_perc),
+  l_TractAsian_perc = log1p(TractAsian_perc),
+  l_TractNHOPI_perc = log1p(TractNHOPI_perc),
+  l_TractAIAN_perc = log1p(TractAIAN_perc),
+  l_TractOMultir_perc = log1p(TractOMultir_perc)
+)
+
+lr.data <- lr.data %>% 
+  select(
+    CensusTract, State, County,  # identifying info
+    LILATracts_halfAnd10_f, LILATracts_halfAnd10, # response var
+    # explanatory and supporting variables
+    Pop2010,
+    Urban, Urban_f,
+    ## demographic as total count
+    TractLOWI, 
+    TractKids, TractSeniors, 
+    TractWhite, TractBlack, TractAsian, TractNHOPI, TractAIAN, TractOMultir, TractHispanic, 
+    # demographics as percentages (out of 100)
+    TractKids_perc, TractSeniors_perc, 
+    TractWhite_perc, TractBlack_perc, TractAsian_perc, TractNHOPI_perc, TractAIAN_perc, TractOMultir_perc, TractHispanic_perc,
+    
+    # percentage demographics on logarithmic scale
+    l_TractKids_perc, l_TractSeniors_perc, 
+    l_TractWhite_perc, l_TractBlack_perc, l_TractAsian_perc, l_TractNHOPI_perc, l_TractAIAN_perc, l_TractOMultir_perc, l_TractHispanic_perc
+  ) %>% 
+  filter(
+    !is.na(TractKids), 
+    !(State %in% c("Hawaii", "Alaska")), # Hawaii and Alaska are distinct (geographically and culturally) 
+    Pop2010 >= 150 # removes most extreme skews (percentage-based)
+  ) 
+
+lr.data.clean <- filter(lr.data, !(CensusTract %in% c(
+  "4001942700", "48365950500" # abnormally large  demographic %s, Hispanic / AIAN # TODO: how much influence do they have?
+  ,"48341950200"
+  )))
+
+```
+
+## Analytical techniques
+
+A **logistic regression** model was fit. This model type is suitable for predicting information with two classes, such as whether a Census Tract is considered to have or not have a significant Low Income and Low Access population. 
+
+Statistically significant coefficients of a logistic regression model model can describe in further detail the influence that different demographic information has on the status of the Census Tract. This is in contrast to other classification methods such as neural networks, which are regarded as "black boxes" and are difficult to interpret. Logistic regression models are also faster to compute over large datasets; the data used in this research contains over 70,000 records.
+
+Additionally, this technique has the capacity to include interaction terms, which can help us understand how
+different demographic information and other characteristics of the Census Tract, combine to produce different results in different locations.
+
+
+## Input data
+
+The response variable is **Low Income and Low Access at 1/2 and 10 miles** (`LILATracts_halfAnd10`), measured as the odds of being flagged as low income and low access.
+
+The following explanatory terms were included, measured on a logarithmic scale (see **data manipulation techniques**):
+
+- The percentage of individuals in the Census Tract that are **children**, measured as less than 18 (`l_TractKids_perc`)
+- The percentage of individuals in the Census Tract that are **Black** (`l_TractBlack_perc`)
+- The percentage of individuals in the Census Tract that are **Asian** (`l_TractAsian_perc`)
+- The percentage of individuals in the Census Tract that are **Hispanic** (`l_TractHispanic_perc`)
+- The percentage of individuals in the Census Tract that are **Native Hawaiian or other Pacific Islander** (`l_TractNHOPI_perc`)
+- The percentage of individuals in the Census Tract that are **American Indian (Native American) or Alaska Native** (`l_TractAIAN_perc`)
+- The percentage of individuals in the Census Tract that are **other ethnicities not listed above** (excluding white), or identify as **multiple ethnicities** (`l_TractOMultir_perc`)
+
+The interactions between whether the census tract was Urban or Rural (`Urban_f`), and a given ethnicity percentage, were included where found to be statistically significant (p-value < 0.001), with Urban as the reference level. This applied to **Hispanic**, **American Indian or Alaska Native**, and **Other ethnicities / Multiple Ethnicities**.
+
+The only ethnicity measure not included was the percentage of the Census Tract that are **white**, which skewed in the opposite direction to all other ethnicities and was therefore treated as the reference level.
+
+Similarly, there is high multi-collinearity between the percentage of individuals in a population that are children and the percentage that are seniors, as these are mutually exclusive categories (TODO: quantify). Thus the percentage that are children was chosen for having lower overall multi-collinearity.
+
+Other models were fit that included interactions between the percentage of individuals that are children and the percentage of individuals that were various ethicities (Black, Hispanic, etc.). When only a selection of interactions with ethnicities were considered, the coefficients were found to be insignificant (for many, the p-value was > 0.05). A model was fit that incorporated all possible interaction terms; all of them were significant (p-value < 0.001) but the model was too difficult to interpret and coefficients were minimal.
+
+TODO: appendix the model summary, reference it here
+
+### Data manipulation techniques
+
+Flag for whether a Census Tract is Urban or Rural was converted to a factor, using Urban as the reference level.
+
+For demographic explanatory terms (ethnicity and age-based continuous variables, such as **TractBlack**), the following steps were taken:
+
+1. The total counts of individuals were converted to percentages, by dividing by the total population of the Census Tract (**Pop2010**)
+1. The percentage was converted to a natural logarithmic scale with the following equation: $\log(percentage + 1)$ (some variables contained records with 0, the logarithm of which is undefined)
+
+Converting demographic information to percentages will prevent the model fitting inadvertently to the population size. 
+
+Many of the explanatory variables are skewed towards 0; taking the logarithm resulted in a better fitted model (AIC=65831, compared to AIC=69886 of a similar model fitted on the percentages without converting to the logarithmic scale).
+
+### Constraining the scope and removing outliers
+
+Census Tracts from the states of Hawaii and Alaska were removed. These data points were frequently found to be outliers, as their ethnicity profiles are skewed very differently to other states, due to geographical and historical reasons. Outcomes can therefore only be considered applicable to states in the main land area that is North America.
+
+Census Tracts where the total population was less than 150 were removed, affecting 253 Census Tracts. Our explanatory variables consider percentages; Census Tracts with a low population count around 150 or less are more likely to have skewed values. Additionally, it is difficult to interpret the results for these Census Tracts; as a 1% increase of a given demographic may only require an additional 1 or 2 people in these areas.
+
+Lastly, three remaining rural Census Tracts were removed as outliers; one from Arizona and two from Texas. Their demographic patterns were distinct from other Census Tracts (for example, in the Census Tract from Arizona, 5444 out of 5628 individuals were Native American or Alaskan). 
+
+TODO: quantify residuals for the outliers
+
+```{r population_skew}
+ggplot(all.data) +
+  geom_violin(aes(x=Urban_f, y=Pop2010, fill=Urban_f)) +
+  labs(y="Population count", x="Number of Census Tracts") + 
+  scale_color_brewer(palette="Set1") +
+  theme_minimal()
+```
+```{=latex}
+\begin{center}
+```
+**Figure TODO**: Distribution of Population Count across all Census Tracts, split by Urban and Rural
+```{=latex}
+\end{center}
+```
+
+### Missing data
+
+Tract Totals were missing for only 3 remaining Census Tracts; these records were removed. All 3 were Census Tracts in South Dakota, leaving 219 Census Tracts for this State. This is very not expected to bias the results.
+
+Census Tracts missing the population count for low income and low access at 1/2 and 10 miles were **included** in this analysis; the response variable for all of these records is 0, as per the convention in the FARA dataset. Including these records prevents any potential bias (20.05% of records would be affected), and assumes that the decision to impute the corresponding flags as 0 was deliberate and appropriate. A further improvement on this research would be to attempt to gather information on the cause of these missing values. 
+
+TODO: move improvement bit to conclusion
+
+## Interpreting the model
+
+```{r build_model}
+model <- glm(
+  LILATracts_halfAnd10_f ~
+    l_TractKids_perc +
+    l_TractAsian_perc 
+      * Urban_f
+  + l_TractHispanic_perc 
+      * Urban_f
+  + l_TractNHOPI_perc 
+  + l_TractAIAN_perc 
+      * Urban_f
+  + l_TractOMultir_perc 
+      * Urban_f
+  + l_TractBlack_perc 
+
+  , family="binomial"
+  , data=lr.data.clean # outliers removed in data setup 
+)
+```
+
+
+```{r make_hist_fun}
+make_hist <- function(var, xlab, xmin=0, xmax=100) {
+  ggplot(lr.data.clean, aes(x= {{ var }})) +
+    geom_histogram() +
+    labs(
+      x=xlab,
+      y= "Number of Census Tracts",
+      title="Ethnicity percentages in Urban and Rural Census Tracts"
+    ) +
+    xlim(xmin, xmax) +
+    facet_wrap(~Urban_f) +
+    theme_minimal() +
+    theme(
+      panel.border=element_rect(colour="grey",size=0.2)
+    )
+}
+```
+
+```{r coef_data}
+ci <- confint(model)
+beta <- summary(model)
+```
+
 
 # Conclusions and Recommendations
 
@@ -590,3 +825,16 @@ Economic Research Service, U.S. Department of Agriculture. (2019).
 *Food Access Research Atlas: Large Retailer Access Map (LRAM)
 documentation*.
 https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
+
+
+# Appendix
+
+
+```{r exp_beta}
+exp(beta)
+```
+
+
+```{r exp_confint}
+exp(ci)
+```
