@@ -877,6 +877,8 @@ p1 + pa / pb
 
 ## Interpreting the model
 
+All presented tables are effects of % changes on a logarithmic scale. That is, the effect of an increase in a demographic from 1% to 2% is equatable to the effect of 
+
 ```{r make_hist_fun}
 make_hist <- function(var, xlab, xmin=0, xmax=100) {
   ggplot(lr.data.clean, aes(x= {{ var }})) +
@@ -894,7 +896,6 @@ make_hist <- function(var, xlab, xmin=0, xmax=100) {
     )
 }
 ```
-
 
 ```{r results_prep}
 
@@ -916,6 +917,7 @@ results_urban <- results[c(
   2,3,5,6,7,8,9),]
 
 results_rural <- results[c(
+  4, # base urban / rural diff
   10,11,12,13
 ),]
 
@@ -934,6 +936,7 @@ urban_rownames <- c(
 )
 
 rural_rownames <- c(
+  "Urban_fRural"                       = "Baseline effect compared to Urban",
   "l_TractAsian_perc:Urban_fRural"     = "% Asian (Rural)",
   "Urban_fRural:l_TractHispanic_perc"  = "% Hispanic (Rural)",
   "Urban_fRural:l_TractAIAN_perc"      = "% Native America/Alaska Native (Rural)",
@@ -944,15 +947,15 @@ rownames(results_urban) <- urban_rownames[rownames(results_urban)]
 rownames(results_rural) <- rural_rownames[rownames(results_rural)]
 ```
 
-```{r urban_table}
+```{r urban_table, }
 results_urban %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) # %>% kable()
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption = "Urban areas")
 ```
 
 
 ```{r rural_table}
 results_rural %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2)))  # %>% kable()
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Additional effect in Rural areas")
 ```
 
 
@@ -968,9 +971,14 @@ results_combined <- data.frame(
 rownames(results_combined) <- rownames(results_rural)
 
 results_combined %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2)))  # %>% kable()
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Overall effect in Rural areas")
 
 ```
+
+
+#### Discussion
+
+
 
 
 # Conclusions and Recommendations
