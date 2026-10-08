@@ -175,6 +175,7 @@ library(scales)
 library(patchwork)
 library(corrplot)
 library(maps)
+library(knitr)
 
 df <- read.csv(
   "data/2019/2019_Food_Access_Research_Atlas_Data/Food Access Research Atlas.csv",
@@ -693,29 +694,6 @@ A **logistic regression** model was fit. This model type is suitable for predict
 
 Statistically significant coefficients of a logistic regression model model can describe in further detail the influence that different demographic information has on the status of the Census Tract. This is in contrast to other classification methods such as neural networks that and are difficult to interpret relationships from, and are slower to compute.
 
-
-## Input data
-
-The response variable is **Low Income and Low Access at 1/2 and 10 miles** (`LILATracts_halfAnd10`), measured as the odds of being flagged as low income and low access.
-
-The following explanatory terms were included, measured on a logarithmic scale (see **data manipulation techniques**):
-
-- The percentage of individuals in the Census Tract that are **children**, measured as less than 18 (`l_TractKids_perc`)
-- The percentage of individuals in the Census Tract that are **Black** (`l_TractBlack_perc`)
-- The percentage of individuals in the Census Tract that are **Asian** (`l_TractAsian_perc`)
-- The percentage of individuals in the Census Tract that are **Hispanic** (`l_TractHispanic_perc`)
-- The percentage of individuals in the Census Tract that are **Native Hawaiian or other Pacific Islander** (`l_TractNHOPI_perc`)
-- The percentage of individuals in the Census Tract that are **American Indian (Native American) or Alaska Native** (`l_TractAIAN_perc`)
-- The percentage of individuals in the Census Tract that are **other ethnicities not listed above** (excluding white), or identify as **multiple ethnicities** (`l_TractOMultir_perc`)
-
-The interactions between whether the census tract was Urban or Rural (`Urban_f`), and a given ethnicity percentage, were included where found to be statistically significant (p-value < 0.001), with Urban as the reference level. This applied to **Hispanic**, **American Indian or Alaska Native**, and **Other ethnicities / Multiple Ethnicities**.
-
-The only ethnicity measure not included was the percentage of the Census Tract that are **white**, which skewed in the opposite direction to all other ethnicities and was therefore treated as the reference level.
-
-Similarly, there is high multi-collinearity between the percentage of individuals in a population that are children and the percentage that are seniors, as these are mutually exclusive categories (TODO: quantify).
-
-Other models were fit that included interactions between the percentage of individuals that are children and the percentage of individuals that were various ethicities (Black, Hispanic, etc.). When only a selection of interactions with ethnicities were considered, the coefficients were found to be insignificant (for many, the p-value was > 0.05). A model was fit that incorporated all possible interaction terms; all of them were significant (p-value < 0.001) but the model was too difficult to interpret and coefficients were 2 or 3 orders of magnitude smaller.
-
 TODO: appendix the model summary, reference it here
 
 ### Data manipulation techniques
@@ -757,7 +735,28 @@ Census Tracts missing the population count for low income and low access at 1/2 
 
 TODO: move improvement bit to conclusion
 
-## Interpreting the model
+
+## Final model design
+
+The response variable is **Low Income and Low Access at 1/2 and 10 miles** (`LILATracts_halfAnd10`), measured as the odds of being flagged as low income and low access.
+
+The following explanatory terms were included, measured on a logarithmic scale (see **data manipulation techniques**):
+
+- The percentage of individuals in the Census Tract that are **children**, measured as less than 18 (`l_TractKids_perc`)
+- The percentage of individuals in the Census Tract that are **Black** (`l_TractBlack_perc`)
+- The percentage of individuals in the Census Tract that are **Asian** (`l_TractAsian_perc`)
+- The percentage of individuals in the Census Tract that are **Hispanic** (`l_TractHispanic_perc`)
+- The percentage of individuals in the Census Tract that are **Native Hawaiian or other Pacific Islander** (`l_TractNHOPI_perc`)
+- The percentage of individuals in the Census Tract that are **American Indian (Native American) or Alaska Native** (`l_TractAIAN_perc`)
+- The percentage of individuals in the Census Tract that are **other ethnicities not listed above** (excluding white), or identify as **multiple ethnicities** (`l_TractOMultir_perc`)
+
+The interactions between whether the census tract was Urban or Rural (`Urban_f`), and a given ethnicity percentage, were included where found to be statistically significant (p-value < 0.001), with Urban as the reference level. This applied to **Hispanic**, **American Indian or Alaska Native**, and **Other ethnicities / Multiple Ethnicities**.
+
+The only ethnicity measure not included was the percentage of the Census Tract that are **white**, which skewed in the opposite direction to all other ethnicities and was therefore treated as the reference level.
+
+Similarly, there is high multi-collinearity between the percentage of individuals in a population that are children and the percentage that are seniors, as these are mutually exclusive categories (TODO: quantify).
+
+Other models were fit that included interactions between the percentage of individuals that are children and the percentage of individuals that were various ethicities (Black, Hispanic, etc.). When only a selection of interactions with ethnicities were considered, the coefficients were found to be insignificant (for many, the p-value was > 0.05). A model was fit that incorporated all possible interaction terms; all of them were significant (p-value < 0.001) but the model was too difficult to interpret and coefficients were 2 or 3 orders of magnitude smaller.
 
 ```{r build_model}
 model <- glm(
@@ -782,6 +781,102 @@ ci <- confint(model)
 beta <- summary(model)$coeff
 ```
 
+
+Model fit was analysed by comparing explanatory terms to fitted values. When a significant coefficient for the interaction with Urban/Rural was found, comparisons were made on each type separately. These were found to be **linear**, confirming the model design is appropriate for the shape of the data.
+
+```{r fitted_vs_inputs_data}
+lr.out <- lr.data.clean %>% mutate(
+  model.fitted = fitted(model),
+  model.predict = predict(model)
+)
+```
+
+```{r fitted_vs_black}
+p1 <- ggplot(lr.out, 
+       aes(
+         x=l_TractBlack_perc,
+         y=model.fitted
+       )) +
+  geom_point(
+    alpha=0.1,
+    colour="steelblue"
+  ) + labs(
+    x="% Black (logarithmic scale)",
+    y="Fitted model value",
+    title="% Black by fitted values, all"
+  ) +
+  geom_abline(slope= 0.15,
+              intercept=0.0,
+              colour="black",
+              size=1
+  ) + theme_minimal() +
+  scale_colour_brewer(palette = "Set1")
+
+p1
+```
+
+
+
+
+```{r fitted_vs_hispanic_split}
+pa <- 
+  lr.out %>% filter(Urban_f =="Urban") %>%
+  ggplot(aes(x=l_TractHispanic_perc, y=model.fitted)) +
+  geom_point(
+    alpha=0.08,
+    colour="steelblue"
+  ) + labs(
+    x="% Hispanic (logarithmic scale)",
+    y="Fitted model value",
+    title="% Hispanic by Fitted values, Urban"
+  ) + 
+  geom_abline(slope= 0.15,
+              intercept=0.0,
+              colour="black",
+              size=1
+  ) + 
+  theme_minimal() + 
+  scale_colour_brewer(palette = "Set1") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+
+pb <- lr.out %>% filter(Urban_f =="Rural") %>%
+  ggplot(aes(x=l_TractHispanic_perc, y=model.fitted)) +
+  geom_point(
+    alpha=0.08,
+    colour="steelblue"
+  ) + labs(
+    x="% Hispanic (logarithmic scale)",
+    y="Fitted model value",
+    title="% Hispanic by Fitted values, Rural"
+  ) + 
+  geom_abline(slope= 0.001,
+              intercept=0.05,
+              colour="black",
+              size=1
+  ) +
+  theme_minimal() + 
+  scale_colour_brewer(palette = "Set1") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) 
+
+# pa <- pa +
+#   theme(
+#     plot.margin = margin(5.5, 20, 5.5, 5.5)
+#   )
+
+p1 + pa / pb
+
+```
+```{=latex}
+\begin{center}
+```
+**Figure TODO**: Correlations between demographic information on a logarithmic percentage scale, and the model fitted values
+```{=latex}
+\end{center}
+```
+
+## Interpreting the model
+
 ```{r make_hist_fun}
 make_hist <- function(var, xlab, xmin=0, xmax=100) {
   ggplot(lr.data.clean, aes(x= {{ var }})) +
@@ -801,6 +896,81 @@ make_hist <- function(var, xlab, xmin=0, xmax=100) {
 ```
 
 
+```{r results_prep}
+
+p_values <- beta[, "Pr(>|z|)"]
+
+results <- data.frame(
+  # variable = rownames(beta),
+  or = exp(beta[, "Estimate"]),
+  lci = exp(ci[, "2.5 %"]),
+  uci = exp(ci[, "97.5 %"]),
+  p_value = ifelse(p_values < 2e-16, "<2e-16", format.pval(p_values, digits = 3))
+)
+
+colnames(results) <- c("Effect on Odds (log scale)", "Lower CI", "Upper CI", "P-value")
+
+
+results_urban <- results[c(
+  # 1, # Intercept
+  2,3,5,6,7,8,9),]
+
+results_rural <- results[c(
+  10,11,12,13
+),]
+
+
+
+# relabel columns
+urban_rownames <- c(
+  # "(Intercept)"          = "(Intercept)",
+  "l_TractKids_perc"     = "% Kids",
+  "l_TractAsian_perc"    = "% Asian",
+  "l_TractHispanic_perc" = "% Hispanic",
+  "l_TractNHOPI_perc"    = "% Hawaiian/Other Pacific Islander",
+  "l_TractAIAN_perc"     = "% Native America/Alaska Native",
+  "l_TractOMultir_perc"  = "% Multiracial/Other",
+  "l_TractBlack_perc"    = "% Black"
+)
+
+rural_rownames <- c(
+  "l_TractAsian_perc:Urban_fRural"     = "% Asian (Rural)",
+  "Urban_fRural:l_TractHispanic_perc"  = "% Hispanic (Rural)",
+  "Urban_fRural:l_TractAIAN_perc"      = "% Native America/Alaska Native (Rural)",
+  "Urban_fRural:l_TractOMultir_perc"   = "% Multiracial/Other (Rural)"
+)
+
+rownames(results_urban) <- urban_rownames[rownames(results_urban)]
+rownames(results_rural) <- rural_rownames[rownames(results_rural)]
+```
+
+```{r urban_table}
+results_urban %>%
+  mutate(across(where(is.numeric), ~ round(.x, 2))) # %>% kable()
+```
+
+
+```{r rural_table}
+results_rural %>%
+  mutate(across(where(is.numeric), ~ round(.x, 2)))  # %>% kable()
+```
+
+
+
+```{r results_combined_in_rural}
+rural_names <- sub(" \\(Rural\\)$", "", rownames(results_rural))
+
+results_combined <- data.frame(
+  Effect = results_rural$`Effect on Odds (log scale)` *
+           results_urban[rural_names, "Effect on Odds (log scale)"]
+)
+
+rownames(results_combined) <- rownames(results_rural)
+
+results_combined %>%
+  mutate(across(where(is.numeric), ~ round(.x, 2)))  # %>% kable()
+
+```
 
 
 # Conclusions and Recommendations
@@ -819,11 +989,18 @@ https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
 # Appendix
 
 ```{r exp_beta}
-exp(beta)
+# exp(beta)
+summary(model)
+# dim(beta)
+# beta
+
+
 ```
 
-```{r exp_confint}
-exp(ci)
+```{r exp_confint, layout="l-body-outset"}
+
 ```
+
+
 
 
