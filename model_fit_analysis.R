@@ -163,3 +163,9 @@ p2 <- all.data %>%
   geom_histogram(aes(x=laomultir10share))
 
 p1 + p2
+
+
+lr.data.clean %>% filter(CensusTract %in% c(
+  "4001942700", "48365950500" # abnormally large  demographic %s, Hispanic / AIAN # TODO: how much influence do they have?
+  ,"48341950200"
+)) %>% View()
