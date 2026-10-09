@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, fig.align = "center")
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, fig.align = "center")
 ```
 
 ```{=latex}
@@ -62,8 +62,7 @@ influence the location of supermarkets, such as local governments and supermarke
 
 
 
-# Description of the FARA dataset
-
+# The FARA dataset and its use in this report
 
 We used the 2019 Large Retailer Access Map (LRAM) data, part of the United
 States Department of Agriculture's Food Access Research Atlas (FARA,
@@ -72,7 +71,6 @@ USDA ERS 2019 -- see References). This data is available directly from the USDA 
 
 This data describes, by Census Tract, the accessibility of supermarkets to the population of that Census Tract. Food Access is defined in multiple variables by several distances - for example, **LAPOP1_10** describes the number of people that are more than 1 mile from a supermarket for an Urban Census Tract, and more than 10 miles for a Rural Census Tract. Demographic information such as the population of different ethnicities, the population of children and seniors, is available, both as totals for the census and as the total of each demographic that is more than a specific distance from a food vendor, as measured in the 2010 Census. All 50 US states are covered. 
 
-
 ## Data types and structure
 
 The data contains one row per census tract, with 72,531 rows. Each row also specifies the State and County (character/categorical). The rest of the data exhibits three variable types: binary flags (e.g. **Urban** flags if the Census Tract is an Urban area, **LATracts1** flags if the tract is considered to be low access at a 1 mile distance); tract totals (numeric counts, e.g. **POP2010** for the total population of the tract, **TractKids** for the number of children in the tract); and continuous rates/shares (continuous, e.g. **lapophalfshare** details the share of the tract that are beyond 1/2 mile from a supermarket).
@@ -80,47 +78,28 @@ The data contains one row per census tract, with 72,531 rows. Each row also spec
 Each population count that represents individuals with insufficient food access, low income, or both, has a corresponding flag. For example, **LAPOP1_10** counts the population of individuals who are more than 1 mile from a supermarket in urban Census Tracts and 10 miles in rural Census Tracts. In comparison, **LA1and10** is a flag to indicate where either at least 500 people, or at least 33%, of the population of that Census Tract are more than 1 mile from a supermarket in urban Census Tracts and 10 miles in rural Census Tracts.
 
 
-## Variables utilised in this analysis
+## Variables used in this analysis
 
 The following variables were used in this analysis:
 
-TODO: ask Louise how to do this bit exactly...
+- Flags representing if a Census Tract is considered to be **Low Income**, **Low Access**, and **combined Low Income and Low Access**, where Low Access is measured by a threshold population that is more than 1/2 mile or 10 miles from a supermarket for Urban and Rural areas respectively. Definitions of both low income and low access can be found in the LRAM Reference Guide (2)
+- **Urban / Rural**, a flag denoting the population density type of the Census Tract. Urban is the reference level (Urban = 0, Rural = 1)
+- The total **population** of the Census Tract
+- Population demographics for the Census Tract as percentages, including:
+   - **Kids** (under 18)
+   - **Seniors** (65 or older)
+   - **White**
+   - **Black**
+   - **Asian**
+   - **Hispanic**
+   - **Hawaiian/Other Pacific Islander**
+   - **Native American/Alaska Native**
+   - **Other races/Multiracial**
+- **Median Family Income** in the Census Tract, in USD
+- **Poverty Rate**:  the percent of the population "living with income at or below the Federal poverty thresholds by family size" (2)
 
 
-| Variable Name      | Data Type | Description|
-|:-------------------------------------------------------------------|----------:|
-| LILATracts_halfAnd10     | Flag (converted to a factor)     | Whether a Census Tract is considered Low Income and Low Access at 1/2 mile for urban Census Tracts, and 10 miles for rural Census Tracts |
-| Urban | Flag (converted to a factor) | A flag for whether the Census Tract is Urban (city or densely populated suburb) or Rural | 
-| TractBlack_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is Black |
-| TractWhite_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is White |
-| TractHispanic_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is Black |
-| TractAsian_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is Black |
-| TractNHOPI_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is Black |
-| TractAIAN_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is Black |
-| TractOMultir_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is Black |
-| TractBlack_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is Black |
-| TractBlack_perc | Numerical (between 0 and 100) | The percentage of the population in the Census Tract that is Black |
-| Population counts and percentages beyond 10 miles from supermarket    | 89.16     |
-| Population counts and percentages beyond 20 miles from supermarket     | 97.92     |
-
-
- TractAsian_perc * Urban_f
-  + TractHispanic_perc #* Urban_f
-  + TractNHOPI_perc #* Urban_f
-  + TractAIAN_perc * Urban_f
-  + TractOMultir_perc #* Urban_f
-  + TractBlack_perc 
-        # * TractKids_perc 
-        # * Urban_f
-  + TractAsian_perc 
-        # * TractKids_perc 
-        * Urban_f
-  + TractHispanic_perc 
-        * TractKids_perc 
-        * Urban_f
-        
-    
-## Completeness
+## Completeness; handling missing values in EDA and Detailed Analysis
 
 The following columns were fully populated:
 
@@ -128,19 +107,15 @@ The following columns were fully populated:
 - **Pop2010** (total population count of the census tract)
 - All flag variables, such as **LA1and10** (flag for low access at 1 mile and 10 miles, urban and rural respectively)
 
-Population tract totals (for example, **TractBlack**, the total number of Black people in the population) have only 0.1% of records missing.
+Population tract totals (for example, **TractBlack**, the total number of Black people in the population), Median Family Income, and Poverty Rate, are missing for only 4 records.
 
-Total population counts for low access exhibited many more missing values - between 20% and 50%, depending on the distance measure. Corresponding flags are zero when the population count is not available.
-Variables for low access and low income shared the same percentage of missing values as their low access only counterparts.
+For the Exploratory Data Analysis, missing Median Family Income and Poverty Rates are imputed using their respective medians across all Census Tracts, while missing demographic population counts (for example, **TractBlack**) are replaced with zeros. For the Detailed Analysis, the 4 records with missing data were removed.
 
-Filled records for these fields included measurements of 0, indicating a missing value is conceptually different to the measurement equalling 0.
+Total population counts for low access exhibited many more missing values - between 20% and 50%, depending on the distance measure. Filled records for these fields included measurements of 0, indicating a missing value is conceptually different to the measurement equalling 0. Corresponding flags are zero when the population count is not available. Variables for low access and low income shared the same percentage of missing values as their low access only counterparts.
 
-No clear pattern was found among the missing values. We suspect that these values were left blank if the Census Tract was smaller than the distance described in the variable.
+No clear pattern was found among the missing values. We suspect that these values may have been left blank if the Census Tract was smaller than the distance described in the variable.
 
-TODO: how were incomplete values handled in this analysis
-
-The response variable for this analysis is a flag, which contains no missing values. Including Census Tracts that are not flagged as low income and low access could have made correlations between demographic information and the outcome weaker. 
-
+For both the Exploratory Data Analysis and Detailed Analysis, Low Access and Low Income, Low Access flags measured at 1/2 and 10 miles were analysed. No records were removed or changed where the corresponding Low Access and/or Low Income, Low Access population counts were missing. Including these records prevents any potential bias (20.05% of records would be affected), and assumes that the decision to impute the corresponding flags as 0 was deliberate and appropriate.
 
 # Ethics, Privacy and Security
 
@@ -684,7 +659,7 @@ lr.data <- lr.data %>%
   ) 
 
 lr.data.clean <- filter(lr.data, !(CensusTract %in% c(
-  "4001942700", "48365950500" # abnormally large  demographic %s, Hispanic / AIAN # TODO: how much influence do they have?
+  "4001942700", "48365950500" # abnormally large  demographic %s, Hispanic / AIAN 
   ,"48341950200"
   )))
 
@@ -696,55 +671,41 @@ A **logistic regression** model was fit. This model type is suitable for predict
 
 Statistically significant coefficients of a logistic regression model model can describe in further detail the influence that different demographic information has on the status of the Census Tract. This is in contrast to other classification methods such as neural networks that and are difficult to interpret relationships from, and are slower to compute.
 
-TODO: appendix the model summary, reference it here
+### Data manipulation, and addressing scope/outliers
 
-### Data manipulation techniques
-
-For demographic explanatory terms (ethnicity and age-based continuous variables, such as **TractBlack**), total counts were converted to a logarithmically scaled percentage using the following equation: `log((TractBlack/Pop2010)*100 + 1)`.
+For demographic explanatory terms (ethnicity and age-based continuous variables), total counts were converted to a logarithmically scaled percentage using the following equation: `log((<demographic population count>/Pop2010)*100 + 1)`.
 
 Converting to percentages prevents the model fitting inadvertently to the population size. Many of the explanatory variables are skewed towards 0; taking the logarithm resulted in a better fitted model (AIC=65831, compared to AIC=69886 of a similar model fitted on the percentages without converting to the logarithmic scale).
 
-### Constraining the scope and removing outliers
+Census Tracts from the states of Hawaii and Alaska were removed. These data points were frequently found to be outliers, as their ethnicity profiles are skewed very differently to other states, due to geographical separation and historical differences Outcomes are thus only applicable to states in the main land mass of North America.
 
-Census Tracts from the states of Hawaii and Alaska were removed. These data points were frequently found to be outliers, as their ethnicity profiles are skewed very differently to other states, due to geographical and historical reasons. Outcomes are thus only be considered applicable to states in the main land area that is North America.
-
-Census Tracts where the total population was less than 150 were removed, affecting 253 Census Tracts. For Census Tracts with a population count at 150 or less, only 1 or 2 people are required to change the demographic by 1%. Values are more likely to be skewed, and results are difficult to interpret for these areas.
+Census Tracts where the total population was less than 150 were removed, which excluded 253 Census Tracts (167 Urban, 86 Rural). For Census Tracts with a population count at 150 or less, only 1 or 2 people are required to change the demographic by 1%. This also makes results difficult to interpret for these Census Tracts. Given the volume removed in comparison to the total records in Urban and Rural, this is not expected to bias the results.
 
 Lastly, three remaining rural Census Tracts were removed as outliers; one from Arizona and two from Texas. Their demographic patterns were distinct from other Census Tracts (for example, in the Census Tract from Arizona, 5444 out of 5628 individuals were Native American or Alaskan). 
 
-TODO: quantify residuals for the outliers
 
-```{r population_skew}
-ggplot(all.data) +
-  geom_violin(aes(x=Urban_f, y=Pop2010, fill=Urban_f)) +
-  labs(y="Population count", x="Number of Census Tracts") + 
-  scale_color_brewer(palette="Set1") +
-  theme_minimal()
-```
-```{=latex}
-\begin{center}
-```
-**Figure TODO**: Distribution of Population Count across all Census Tracts, split by Urban and Rural
-```{=latex}
-\end{center}
-```
-
-### Missing data
-
-Tract Totals were missing for only 3 remaining Census Tracts; these records were removed. All 3 were Census Tracts in South Dakota, leaving 219 Census Tracts for this State. This is very not expected to bias the results.
-
-Census Tracts missing the population count for low income and low access at 1/2 and 10 miles were **included** in this analysis; the response variable for all of these records is 0, as per the convention in the FARA dataset. Including these records prevents any potential bias (20.05% of records would be affected), and assumes that the decision to impute the corresponding flags as 0 was deliberate and appropriate. A further improvement on this research would be to attempt to gather information on the cause of these missing values. 
-
-TODO: move improvement bit to conclusion
+<!-- # ```{r population_skew} -->
+<!-- # ggplot(all.data) + -->
+<!-- #   geom_violin(aes(x=Urban_f, y=Pop2010, fill=Urban_f)) + -->
+<!-- #   labs(y="Population count", x="Number of Census Tracts") +  -->
+<!-- #   scale_color_brewer(palette="Set1") + -->
+<!-- #   theme_minimal() -->
+<!-- # ``` -->
+<!-- # ```{=latex} -->
+<!-- # \begin{center} -->
+<!-- # ``` -->
+<!-- # **Figure xx**: Distribution of Population Count across all Census Tracts, split by Urban and Rural -->
+<!-- # ```{=latex} -->
+<!-- # \end{center} -->
+<!-- # ``` -->
 
 
 ## Final model design
 
-The response variable is **Low Income and Low Access at 1/2 and 10 miles** (`LILATracts_halfAnd10`), measured as the odds of being flagged as low income and low access.
+The response variable is **Low Income and Low Access at 1/2 and 10 miles**, where Y=1 corresponds to being Low Income and Low Access.
 
 The following explanatory terms were included, measured on a logarithmic scale (see **data manipulation techniques**):
-
-- The percentage of individuals in the Census Tract that are **children**, measured as less than 18 (`l_TractKids_perc`)
+- The percentage of individuals in the Census Tract that are **Kids**, measured as less than 18 (`l_TractKids_perc`)
 - The percentage of individuals in the Census Tract that are **Black** (`l_TractBlack_perc`)
 - The percentage of individuals in the Census Tract that are **Asian** (`l_TractAsian_perc`)
 - The percentage of individuals in the Census Tract that are **Hispanic** (`l_TractHispanic_perc`)
@@ -752,13 +713,13 @@ The following explanatory terms were included, measured on a logarithmic scale (
 - The percentage of individuals in the Census Tract that are **American Indian (Native American) or Alaska Native** (`l_TractAIAN_perc`)
 - The percentage of individuals in the Census Tract that are **other ethnicities not listed above** (excluding white), or identify as **multiple ethnicities** (`l_TractOMultir_perc`)
 
-The interactions between whether the census tract was Urban or Rural (`Urban_f`), and a given ethnicity percentage, were included where found to be statistically significant (p-value < 0.001), with Urban as the reference level. This applied to **Hispanic**, **American Indian or Alaska Native**, and **Other ethnicities / Multiple Ethnicities**.
+The interactions between whether the census tract was Urban or Rural (`Urban_f`), and a given ethnicity percentage, were included where found to be statistically significant (p-value < 0.001), with Urban as the reference level.
 
-The only ethnicity measure not included was the percentage of the Census Tract that are **white**, which skewed in the opposite direction to all other ethnicities and was therefore treated as the reference level.
+The only ethnicity measure not included was the percentage of the Census Tract that are **White**, which skewed in the opposite direction to all other ethnicities and was therefore treated as the reference level.
 
-Similarly, there is high multi-collinearity between the percentage of individuals in a population that are children and the percentage that are seniors, as these are mutually exclusive categories (TODO: quantify).
+Similarly, strong correlations were found in the Exploratory Data Analysis between the percentage of individuals in a population that are children and the percentage that are seniors, as these are mutually exclusive categories.
 
-Other models were fit that included interactions between the percentage of individuals that are children and the percentage of individuals that were various ethicities (Black, Hispanic, etc.). When only a selection of interactions with ethnicities were considered, the coefficients were found to be insignificant (for many, the p-value was > 0.05). A model was fit that incorporated all possible interaction terms; all of them were significant (p-value < 0.001) but the model was too difficult to interpret and coefficients were 2 or 3 orders of magnitude smaller.
+Other models were fit that included interactions between % Kids and ethnicities such as % Black. When only a selection of interactions with ethnicities were considered, the coefficients were found to be insignificant (for many, the p-value was > 0.05). A model was fit that incorporated all possible interaction terms; all of them were significant (p-value < 0.001) but model interpretation was compromised.
 
 ```{r build_model}
 model <- glm(
@@ -793,14 +754,15 @@ lr.out <- lr.data.clean %>% mutate(
 )
 ```
 
-```{r fitted_vs_black}
+```{r fitted_vs_inputs}
+
 p1 <- ggplot(lr.out, 
        aes(
          x=l_TractBlack_perc,
          y=model.fitted
        )) +
   geom_point(
-    alpha=0.1,
+    alpha=0.05,
     colour="steelblue"
   ) + labs(
     x="% Black (logarithmic scale)",
@@ -810,32 +772,25 @@ p1 <- ggplot(lr.out,
   geom_abline(slope= 0.15,
               intercept=0.0,
               colour="black",
-              size=1
+              linewidth=1
   ) + theme_minimal() +
   scale_colour_brewer(palette = "Set1")
 
-p1
-```
-
-
-
-
-```{r fitted_vs_hispanic_split}
 pa <- 
   lr.out %>% filter(Urban_f =="Urban") %>%
   ggplot(aes(x=l_TractHispanic_perc, y=model.fitted)) +
   geom_point(
-    alpha=0.08,
+    alpha=0.02,
     colour="steelblue"
   ) + labs(
     x="% Hispanic (logarithmic scale)",
     y="Fitted model value",
     title="% Hispanic by Fitted values, Urban"
   ) + 
-  geom_abline(slope= 0.15,
-              intercept=0.0,
+  geom_abline(slope= 0.13,
+              intercept=0.05,
               colour="black",
-              size=1
+              linewidth=1
   ) + 
   theme_minimal() + 
   scale_colour_brewer(palette = "Set1") +
@@ -845,7 +800,7 @@ pa <-
 pb <- lr.out %>% filter(Urban_f =="Rural") %>%
   ggplot(aes(x=l_TractHispanic_perc, y=model.fitted)) +
   geom_point(
-    alpha=0.08,
+    alpha=0.02,
     colour="steelblue"
   ) + labs(
     x="% Hispanic (logarithmic scale)",
@@ -855,7 +810,7 @@ pb <- lr.out %>% filter(Urban_f =="Rural") %>%
   geom_abline(slope= 0.001,
               intercept=0.05,
               colour="black",
-              size=1
+              linewidth=1
   ) +
   theme_minimal() + 
   scale_colour_brewer(palette = "Set1") +
@@ -872,14 +827,14 @@ p1 + pa / pb
 ```{=latex}
 \begin{center}
 ```
-**Figure TODO**: Correlations between demographic information on a logarithmic percentage scale, and the model fitted values
+**Figure 3**: Correlations between explanatory terms and model fitted values
 ```{=latex}
 \end{center}
 ```
 
 ## Interpreting the model
 
-All presented tables are direct effects on the odds (i.e. the exponent of the raw coefficient) of % changes on a **logarithmic scale**. This means that increases from lower values are more impactful than increases from higher values: the effect of an increase in a demographic from 1% to 2% is of equal magnitude than an increase in a demographic from 10% to 20%.
+All tables present direct effects on the odds (i.e. the exponent of the raw coefficient) of % changes on a **logarithmic scale**. This means that increases from lower values are more impactful than increases from higher values: the effect of an increase in a demographic from 1% to 2% is of equal magnitude than an increase in a demographic from 10% to 20%.
 
 ```{r make_hist_fun}
 make_hist <- function(var, xlab, xmax=100, ymax = NA) {
@@ -957,13 +912,13 @@ rownames(results_rural) <- rural_rownames[rownames(results_rural)]
 
 ```{r urban_table, }
 results_urban %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) #%>% kable(caption = "Demographic effects on odds in Urban Census Tracts")
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption = "Demographic effects on odds in Urban Census Tracts")
 ```
 
 
 ```{r rural_table}
 results_rural %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) #%>% kable(caption="Additional Demographic effects on odds in Rural Census Tracts")
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Additional Demographic effects on odds in Rural Census Tracts")
 ```
 
 
@@ -980,7 +935,7 @@ rownames(results_combined) <- rownames(results_rural)
 
 results_combined %>%
   slice(-1) %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) #%>% kable(caption="Overall effect of demographics on odds in Rural Census Tracts (equal to Urban effect times additional Rural effect)")
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Overall effect of demographics on odds in Rural Census Tracts (equal to Urban effect times additional Rural effect)")
 
 ```
 
@@ -1059,10 +1014,14 @@ Further research may include gathering data on ages within different demographic
 
 # References
 
-Economic Research Service, U.S. Department of Agriculture. (2019).
-*Food Access Research Atlas: Large Retailer Access Map (LRAM)
-documentation*.
+
+(1) Economic Research Service, U.S. Department of Agriculture. (2019).
+*Food Access Research Atlas: Large Retailer Access Map (LRAM) documentation*.
 https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
+
+
+(2) *Food Access Research Atlas - Large Retailer Access Map Reference Guide*
+https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation/large-retailer-access-map-reference-guide
 
 
 # Appendix
