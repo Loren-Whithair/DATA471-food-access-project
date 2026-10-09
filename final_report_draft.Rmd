@@ -640,7 +640,7 @@ lr.data <- lr.data %>%
     TractNHOPI_perc = TractNHOPI_share * 100,
     TractAIAN_perc = TractAIAN_share * 100,
     TractOMultir_perc = TractOMultir_share * 100,
-    TractHispanic_perc = TractHispanic_share * 100
+    TractHispanic_perc = TractHispanic_share * 100,
   )
 
 # compute logarithmic data
@@ -661,6 +661,8 @@ lr.data <- lr.data %>%
     CensusTract, State, County,  # identifying info
     LILATracts_halfAnd10_f, LILATracts_halfAnd10, # response var
     # explanatory and supporting variables
+    MedianFamilyIncome,
+    lahisphalfshare, lahisp10share, ## out of 100
     Pop2010,
     Urban, Urban_f,
     ## demographic as total count
@@ -985,22 +987,31 @@ results_combined %>%
 
 #### Discussion
 
+In this discussion a "unit increase" refers to an increase in the percentage that equates to 1 on the logarithmic scale for the demographic being discussed (for example, from 1% to approximately 4.4%, as $\log(4.4+1) - log(1+1) \approx 1$).
+
 #### Children
+
 Table 2 shows that Rural Census Tracts are 55% less likely to be labelled as Low Income, Low Access than Urban Census Tracts (0.45, 95% CI (0.38, 0.52), p-value < 2e-16). This may be a consequence of inequities between Population Density types, but it may also be a consequence of our choice of distances for Urban and Rural areas in our response varaible.
 
-There is a negative relationship with **% Kids** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 23% less likely to be Low Income, Low Access per increase in % Kids on the logarithmic scale (0.77, 95% CI (0.73, 0.81), p-value < 2e-16). No statistically significant difference was found in Rural areas, and so this term was not included in the final model.
+There is a negative relationship with **% Kids** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 23% less likely to be Low Income, Low Access per unit increase in %Kids (0.77, 95% CI (0.73, 0.81), p-value < 2e-16). No statistically significant difference was found in Rural areas, and so this term was not included in the final model.
 
 #### Negative relationships of ethnicities
-There is a negative relationship between **% Asian** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 63% less likely to be Low Income, Low Access per increase in % Asian on the logarithmic scale (0.37, 95% CI (0.36, 0.38), p-value < 2e-16). Tables 2 and 3 show the negative relationship of % Asian is greater in Rural Census Tracts, which are 91% less likely per increase in % Asian on the logarithmic scale (additional effect in Rural Census Tracts is 0.24, 95% CI (0.18, 0.31), p-value < 2e-16).
+There is a negative relationship between **% Asian** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 63% less likely to be Low Income, Low Access per unit increase of % Asian (0.37, 95% CI (0.36, 0.38), p-value < 2e-16). Tables 2 and 3 show the negative relationship of % Asian is greater in Rural Census Tracts, which are 91% less likely per unit increase (additional effect in Rural Census Tracts is 0.24, 95% CI (0.18, 0.31), p-value < 2e-16).
 
 #### Positive relationships of ethnicities 
-In contrast, there is a positive relationship with **% Black** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 50% more likely to be Low Income, Low Access per increase in % Black on the logarithmic scale (1.50, 95% CI (1.48, 1.52), p-value < 2e-16). No statistically significant difference was found in Rural areas, and so this term was not included in the final model.
+In contrast to % Asian, there is a positive relationship with **% Black** and the odds of being Low Income, Low Access: Table 1 shows Urban Census Tracts are 50% more likely to be Low Income, Low Access per unit increase of % Black (1.50, 95% CI (1.48, 1.52), p-value < 2e-16). No statistically significant difference was found in Rural areas, and so this term was not included in the final model. 
 
-The spike to the left in Figure (TODO) shows that % Black of a Census Tract is most commonly between 0 and 10%. For a Census Tract with the median total population size of approximately 4000, an 1% increase would equate to 40 people. Note that an increase from 10% to approximately 29% corresponds to a 1 unit increase on our logarithmically transformed scale ($\log(10 + 1) + 1 \approx \log(28.9 + 1)$), a difference of 19%. A extra 760 Black people, when comparing an average sized Census Tract with 10% Black people to a similar sized Census Tract, would therefore result in a 50% increase in odds of being Low Income, Low Access. 
+The largest positive relationships observed were for **% Hawaiian/Other Pacific Islander** (2.15, 95% CI (1.93, 2.39), p-value < 2e-16, with no significant difference found between Urban and Rural), and for **% Multiracial/Other** specifically in Urban areas, where with 95% confidence we observe Census Tracts are more than 200% more likely per unit increase (3.36, 95% CI (3.12, 3.62), p-value < 2e-16).
+
+The spike to the left in Figure (TODO) shows that % Black of a Census Tract is most commonly between 0 and 10%. For a Census Tract with the median total population size of approximately 4000, an 1% increase would equate to 40 people. Note that an increase from 10% to approximately 29% corresponds to a 1 unit increase on our logarithmically transformed scale ($\log(10 + 1) + 1 \approx \log(28.9 + 1)$), a difference of 19%. A extra 760 Black people in the second average sized Census Tract could therefore result in a 50% increase in odds of being Low Income, Low Access. 
 
 Similar in size to % Black, a positive relationship was found with **% Native American/Alaska Native** in Urban areas (1.51, 95% CI (1.42, 1.60), p-value < 2e-16). However, in contrast to % Black, the effect of Native American/Alaska Native is considerably larger in Rural areas a nearly 100% increase in odds on the logarithmic scale (additional multiplicative effect of 1.32, 95% CI (1.21, 1.45), p-value = 6.32e-10). 
 
 Census Tracts more frequently have a much lower percentage of Native American/Alaska Native individuals than Black individuals (Figure TODO). Due to the logarithmic scale, differences in percentages closer to 0 have a greater impact; in an average sized Census Tract even less Native American/Alaska Natives may represent a difference in the odds of being Low Income, Low Access.
+
+
+
+
 
 
 ```{r hist_black}
@@ -1016,16 +1027,16 @@ make_hist(TractAIAN_perc, "% Native American / Alaska Native")
 
 #### Mixed relationships, Urban vs Rural
 
-In 
+There is a **negative** relationship with **% Hispanic** and the odds of being Low Income, Low Access in Urban areas: Urban Census Tracts are 39% less likely to be Low Income, Low Access per percent unit increase on the logarithmic scale (0.61, 95% CI (0.58, 0.64), p-value < 2e-16). However, an inverse effect is observed in Rural areas, which are 27% **more** likely to be Low Income, Low Access per unit increase (additional in Rural areas of 2.09, 95% CI (1.80, 2.42), p-value < 2e-16).
 
+This may indicate better outcomes for the Hispanic population in Urban areas compared to Rural, in distance to food, or general income. However, it may also be a consequence of a confounding variable that was not modelled, for example location-based patterns in % Hispanic that differ between Urban and Rural. A brief exploratory analysis of the available data in the FARA dataset was conducted, with no clear results; more analysis would be required to better understand these results.
 
+Similarly, the relationship between **%Multiracial/Other** is very large and positive in Urban Census Tracts, and slightly negative in Rural. This is the opposite direction to the difference in effect of % Hispanic. Like % Hispanic, more analysis could be conducted in this area.
 
+```{r }
+make_hist(TractHispanic_perc, "% Hispanic")
 
-
-
-
-
-
+```
 
 
 
@@ -1034,9 +1045,23 @@ In
 
 # Conclusions and Recommendations
 
-TODO
+Note that a "worse" outcome refers to higher odds that a Census Tract is flagged as Low Income and Low Access.
 
-- % kids, explore more
+1. Slightly better outcomes were observed in Census Tracts with a larger percentage of children. However, no conclusions could be drawn on the interaction of children and different ethnicities. Note that no information was available on the breakdown of the percentage of children that belonged to different ethnicities 
+1. Better outcomes were observed in Census Tracts with larger Asian populations in both Urban and Rural, while worse outcomes were observed in Census Tracts with larger Black populations
+1. The smallest minority groups in the United States of America, including Hawaiian/Other Pacific Islander, and Native American, have a disproportionately large influence towards worse outcomes.
+1. Distinctions between Urban and Rural areas are clear, and impacts vary for different ethnicity groups.
+
+Changes and targeted initiatives should prioritise or strongly consider the impact on areas with a stronger presence of smaller ethnic groups, to prevent exacerbating existing inequalities.
+
+Black communities in Urban and Rural areas have been similarly affected and may both benefit from targeted initiatives designed to address these inequalities. However, in general, impacts on communities in Urban and Rural should be considered separately.
+
+These findings cannot be applied to the States of Alaska and Hawaii, and not to very small Census Tracts. Research targeted at these areas may be beneficial for further understanding.
+
+In order to uphold ethical standards, findings should be considered alongside quantitative knowledge of these communities, their opinions and cultures, when planning action from these findings.
+
+Further research may include gathering data on ages within different demographics (for example how many black children are in an area compared to white children) which may improve understanding of relationships with other compounding difficulties such as the capacity to support non-working family members.
+
 
 # References
 
