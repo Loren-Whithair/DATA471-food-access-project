@@ -109,7 +109,7 @@ The following columns were fully populated:
 
 Population tract totals (for example, **TractBlack**, the total number of Black people in the population), Median Family Income, and Poverty Rate, are missing for only 4 records.
 
-For the Exploratory Data Analysis, missing Median Family Income and Poverty Rates are imputed using their respective medians across all Census Tracts, while missing demographic population counts (for example, **TractBlack**) are replaced with zeros. For the Detailed Analysis, the 4 records with missing data were removed.
+For the Exploratory Data Analysis, missing Median Family Income and Poverty Rates are imputed using their respective medians across all Census Tracts, while missing demographic population counts (for example, **TractBlack**) are replaced with zeros. For the Detailed Analysis, the 4 records with missing data are removed.
 
 Total population counts for low access exhibited many more missing values - between 20% and 50%, depending on the distance measure. Filled records for these fields included measurements of 0, indicating a missing value is conceptually different to the measurement equalling 0. Corresponding flags are zero when the population count is not available. Variables for low access and low income shared the same percentage of missing values as their low access only counterparts.
 
@@ -118,8 +118,6 @@ No clear pattern was found among the missing values. We suspect that these value
 For both the Exploratory Data Analysis and Detailed Analysis, Low Access and Low Income, Low Access flags measured at 1/2 and 10 miles were analysed. No records were removed or changed where the corresponding Low Access and/or Low Income, Low Access population counts were missing. Including these records prevents any potential bias (20.05% of records would be affected), and assumes that the decision to impute the corresponding flags as 0 was deliberate and appropriate.
 
 # Ethics, Privacy and Security
-
-TODO: revise this in response to feedback
 
 ## Ethics
 
@@ -138,7 +136,8 @@ A handful of tracts have a very low population count, and theoretically could be
 
 LRAM data is publicly available for personal use; steps do not need to be taken to secure the data itself.
 
-Analysis and findings can be stored securely in a private Github repository, only granting access to individuals working on the project. Devices that contain local copies of the code can be password-protected. The Github accounts of those with access can be made secure using SSH or other secure server connection protocol.
+Data and code for this project is stored in a Github repository. Devices that contain local copies of the code are password-protected, and the Github accounts are secured using SSH protocol. Analysis and findings can be stored securely in a private Github repository, only granting access to individuals working on the project; however, for the sake of accessibility for assessment, the repository for this project has been made public.
+
 
 # Exploratory Data Analysis
 
@@ -381,8 +380,8 @@ box_by_flag_group <- function(data, flag, family_label, grp, range_df = NULL) {
 
 family_of <- function(f) {
   if (grepl("^LILATracts", f)) "LOW INCOME + LOW ACCESS"
-  else if (grepl("^LowIncome", f)) "LOW INCOME only"
-  else "LOW ACCESS only"
+  else if (grepl("^LowIncome", f)) "LOW INCOME"
+  else "LOW ACCESS"
 }
 
 # cohen_d function
@@ -513,7 +512,7 @@ p_income_urban
 ```{=latex}
 \begin{center}
 ```
-**Figure 2:** Median family income for Urban and Rural census Tracts, where Census Tracts are further split by Low access **Low income** flags, measured at a 1/2 mile distance for Urban and 10 miles for Rural.
+**Figure 2:** Median family income for Urban and Rural census Tracts, where Census Tracts are further split by **Low access Low income** flags, measured at a 1/2 mile distance for Urban and 10 miles for Rural.
 
 ```{=latex}
 \end{center}
@@ -682,23 +681,6 @@ Census Tracts from the states of Hawaii and Alaska were removed. These data poin
 Census Tracts where the total population was less than 150 were removed, which excluded 253 Census Tracts (167 Urban, 86 Rural). For Census Tracts with a population count at 150 or less, only 1 or 2 people are required to change the demographic by 1%. This also makes results difficult to interpret for these Census Tracts. Given the volume removed in comparison to the total records in Urban and Rural, this is not expected to bias the results.
 
 Lastly, three remaining rural Census Tracts were removed as outliers; one from Arizona and two from Texas. Their demographic patterns were distinct from other Census Tracts (for example, in the Census Tract from Arizona, 5444 out of 5628 individuals were Native American or Alaskan). 
-
-
-<!-- # ```{r population_skew} -->
-<!-- # ggplot(all.data) + -->
-<!-- #   geom_violin(aes(x=Urban_f, y=Pop2010, fill=Urban_f)) + -->
-<!-- #   labs(y="Population count", x="Number of Census Tracts") +  -->
-<!-- #   scale_color_brewer(palette="Set1") + -->
-<!-- #   theme_minimal() -->
-<!-- # ``` -->
-<!-- # ```{=latex} -->
-<!-- # \begin{center} -->
-<!-- # ``` -->
-<!-- # **Figure xx**: Distribution of Population Count across all Census Tracts, split by Urban and Rural -->
-<!-- # ```{=latex} -->
-<!-- # \end{center} -->
-<!-- # ``` -->
-
 
 ## Final model design
 
@@ -958,7 +940,7 @@ In contrast to % Asian, there is a positive relationship with **% Black** and th
 
 The largest positive relationships observed were for **% Hawaiian/Other Pacific Islander** in both Urban and Rural areas (2.15, 95% CI (1.93, 2.39), p-value < 2e-16), and for **% Multiracial/Other** specifically in Urban areas, where for each logarithmic unit increase the odds increase by more than 200% (3.36, 95% CI (3.12, 3.62), p-value < 2e-16).
 
-The spike to the left in Figure (TODO) shows that % Black of a Census Tract is most commonly between 0 and 10%. For a Census Tract with the median total population size of approximately 4000, an 1% increase would equate to 40 people. Note that an increase from 10% to approximately 29% corresponds to a 1 unit increase on our logarithmically transformed scale ($\log(10 + 1) + 1 \approx \log(28.9 + 1)$), a difference of 19%. A extra 760 Black people in the second average sized Census Tract could therefore result in a 50% increase in odds of being Low Income, Low Access. 
+The spike to the left in Figure (TODO) shows that % Black of a Census Tract is most commonly between 0 and 10%. For a Census Tract with the median total population size of approximately 4000, an 1% increase would equate to 40 people. Note that an increase from 10% to approximately 29% corresponds to a 1 unit increase on our logarithmically transformed scale ($\log(10 + 1) + 1 \approx \log(28.9 + 1)$), a difference of 19%. A difference of 760 Black people could represent a 50% increase of the odds of being Low Income, Low Access. It is important to note this is does not imply causation (if 760 Black people relocated this will not necessarily change the status of the Census Tracts) but rather indicates a clear lacking in the opportunities and infrastructure available in areas with a more prevalent Black population.
 
 Similar in size to % Black, a positive relationship was found with **% Native American/Alaska Native** in Urban areas (1.51, 95% CI (1.42, 1.60), p-value < 2e-16). However, the effect of Native American/Alaska Native is considerably larger in Rural areas, where the odds are near 100% higher per logarithmic unit increase (additional multiplicative effect of 1.32 in Rural areas, 95% CI (1.21, 1.45), p-value = 6.32e-10). 
 
@@ -990,18 +972,16 @@ make_hist(TractHispanic_perc, "% Hispanic")
 ```
 
 
-
-
 # Conclusions and Recommendations
 
 Note that a "worse" outcome refers to higher odds that a Census Tract is flagged as Low Income and Low Access.
 
 1. Slightly better outcomes were observed in Census Tracts with a larger percentage of children. However, no conclusions could be drawn on the interaction of children and different ethnicities. Note that no information was available on the breakdown of the percentage of children that belonged to different ethnicities 
 1. Better outcomes were observed in Census Tracts with larger Asian populations in both Urban and Rural, while worse outcomes were observed in Census Tracts with larger Black populations
-1. The smallest minority groups in the United States of America, including Hawaiian/Other Pacific Islander, and Native American, have a disproportionately large influence towards worse outcomes.
+1. The smallest minority groups in the United States of America, including Hawaiian/Other Pacific Islander, and Native American, have a disproportionately strong relationship with worse outcomes.
 1. Distinctions between Urban and Rural areas are clear, and impacts vary for different ethnicity groups.
 
-Changes and targeted initiatives should prioritise or strongly consider the impact on areas with a stronger presence of smaller ethnic groups, to prevent exacerbating existing inequalities.
+Changes and targeted initiatives should prioritise or strongly consider the impact on areas with a stronger presence of smaller ethnic groups, to prevent exacerbating existing inequalities these communities face.
 
 Black communities in Urban and Rural areas have been similarly affected and may both benefit from targeted initiatives designed to address these inequalities. However, in general, impacts on communities in Urban and Rural should be considered separately.
 
@@ -1019,10 +999,8 @@ Further research may include gathering data on ages within different demographic
 *Food Access Research Atlas: Large Retailer Access Map (LRAM) documentation*.
 https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
 
-
-(2) *Food Access Research Atlas - Large Retailer Access Map Reference Guide*
-https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation/large-retailer-access-map-reference-guide
-
+(2) U.S. Department of Agriculture, Economic Research Service. (2026, July 27). 
+*Food Access Research Atlas – Large Retailer Access Map Reference Guide* https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation/large-retailer-access-map-reference-guide
 
 # Appendix
 
