@@ -30,38 +30,30 @@ The students I collaborated with in Phase 1 are:
 Difficulty accessing food due to economic or geographic barriers can significantly impact
 a person's quality of life and exacerbate existing inequalities. This report aims to understand, in the United States, the difference in how various demographics (particularly different ethnic groups) are impacted by limited access to food. This can help inform future action taken to address this known issue.
 
+The 2019 Large Retailer Access Map (LRAM) dataset describes per Census Tract whether significant portions of the population have low access to supermarkets, are low income, and includes flags combining the two. It also contains ethnicity and age-based demographic breakdowns of the population. Measurements are from the 2010 United States Census. This dataset exclusively was analysed.
 
---- dataset background
-The 2019 Large Retailer Access Map (LRAM) dataset describes per Census Tract whether significant portions of the population have low access to supermarkets, are low income, and includes flags combining the two. It also contains ethnicity and age-based demographic breakdowns of the population. Measurements are from the 2010 United States Census. This dataset exclusively was used for this analysis.
-
---- exclusions
-Census Tracts in Hawaii and Alaska were excluded from this analysis; these States are geographically separate from others, and have unique historic distinctions, making them outliers. The outcomes of this analysis therefore cannot be applied to these locations.
+Census Tracts in Hawaii and Alaska were excluded; these States are geographically separate from others, and have unique historic distinctions, making them outliers. The outcomes of this analysis therefore cannot be applied to these locations.
 
 Census Tracts where the population was smaller than 150 were also excluded. The model fit measures demographic information as percentages of the total population, and so model fit was expected to improve when removing the smallest Census Tracts. 
 
 
---- analysis method
-All ethnic groups available in the dataset (represented as percentages of the Census Tract's total population) were analysed for their relationship with whether a Census Tract is considered to be Low Income _and_ Low Access at 1/2 mile or 10 miles for Urban and Rural Census Tracts respectively. Criteria for Low Income is from the Department of Treasury’s New Markets Tax Credit (NMTC) program (2), while Low Access considers if more than 33% of the population, or a total of 500 individuals, are further than 1/2 mile (Urban) or 10 miles (Rural) from a supermarket.
+All ethnic groups available in the dataset (represented as percentages of the Census Tract's total population) were analysed for their relationship with whether a Census Tract is (1) or is not (0) considered to be Low Income _and_ Low Access at 1/2 mile for Urban Census Tracts, or 10 miles for Rural Census Tracts. I also explored how this relationship differs between Urban and Rural Census Tracts.
+
+When fit on data converted to a **logarithmic scale**, the model was found to have the best fit, and the explanatory variables had a linear correlation with the output. 
+
+A higher percentage of Black individuals in a Census Tract indicated greater odds of being Low Income and Low Access; for each unit increase in the percentage of Black people on a logarithmic scale, the odds increase by 50% (95% CI (1.48, 1.52), p-value < 2e-16). No statistically significant difference in this relationship was found between Urban and Rural Census Tracts.
+
+Ethnicities that typically represent a smaller percentage of the population exhibited even greater positive relationships:
+- For each unit increase in the percentage of **Native American/Alaska Natives** on a logarithmic scale, the odds of a Census Tract being Low Income, Low Access increase by 51% in Urban areas (95% CI (1.42, 1.60), p-value < 2e-16), and nearly 100% in Rural areas (additional multiplicative effect of 32% for Rural Census Tracts, 95% CI (1.21, 1.45), p-value = 6.32e-10)
+- For each unit increase in the percentage of **Hawaiian/Other Pacific Islander** on a logarithmic scale, the odds of a Census Tract being Low Income, Low Access increase by 115% in Urban areas (95% CI (1.93, 2.39), p-value < 2e-16) with no statistically significant difference found in Rural areas
+
+Different relationships were found in Urban and Rural areas for the percentage of **Hispanic** people, with a 39% **decrease** per unit increase in Urban areas (95% CI (0.58, 0.64), p-value < 2e-16), and a 27% increase per unit increase in Rural areas (additional multiplicative effect of 109% for Rural Census Tracts, 95% CI (1.80, 2.42), p-value < 2e-16).
+
+Changes and targeted initiatives should prioritise or strongly consider the impact on areas with a stronger presence of Black, Native American, Alaskan Native, Hawaiian, and other Pacific Islander groups, to prevent exacerbating existing inequalities these communities face. Initiatives that increase food access in areas with a higher percentage of these demographics may have a greater impact. The potential impacts on Urban and Rural Census Tracts should generally be considered separately.
+
+Further research could be done to understand the relationship with the Hispanic population and Low Income, Low Access, and to investigate food access in Alaska and Hawaii separately.
 
 
-
-
-
-
-
-
-aim of report
-- This report aims to understand the relationship between demographic characteristics of a 
-
-background, purpose
-
-data used, analysis method.
-
-findings
-
-robustness
-
-impact / recommendations 
 
 # Background
 
@@ -939,13 +931,13 @@ The odds of a Rural Census Tracts being Low Income, Low Access is 55% less than 
 
 ### Black population and Low Income, Low Access
 
-There is a positive relationship with **% Black** and the odds of being Low Income, Low Access: Table 1 shows for each logarithmic unit increase of % Black, the odds of being Low Income, Low Access for Urban Census Tracts increase by 50% higher (95% CI (1.48, 1.52), p-value < 2e-16). No statistically significant difference was found in Rural areas, and so this term was not included in the final model.
+There is a positive relationship with **% Black** and the odds of being Low Income, Low Access: Table 1 shows for each logarithmic unit increase of % Black, the odds of being Low Income, Low Access for Urban Census Tracts increase by 50% (95% CI (1.48, 1.52), p-value < 2e-16). No statistically significant difference was found in Rural areas, and so this term was not included in the final model.
 
 Figure 4 shows that the percentage of a Census Tract that is Black frequently sits between 0 and 10%. For a Census Tract with the median total population size of approximately 4000, an 1% increase would equate to 40 people. Note that an increase from 10% to approximately 29% corresponds to a 1 unit increase on our logarithmically transformed scale ($\log(10 + 1) + 1 \approx \log(28.9 + 1)$), a difference of 19%. A difference of 760 Black people could represent a 50% increase of the odds of being Low Income, Low Access. It is important to note this is does not imply causation (if 760 Black people relocated this will not necessarily change the status of the Census Tracts) but rather indicates a clear lacking in the opportunities and infrastructure available in areas with a more prevalent Black population.
 
 ### Worse outcomes for smallest ethnic groups
 
-Similar in size to % Black, a positive relationship was found with **% Native American/Alaska Native** in Urban areas (1.51, 95% CI (1.42, 1.60), p-value < 2e-16). In Rural areas, the odds are nearly 100% higher per logarithmic unit increase (additional multiplicative effect of 1.32 in Rural areas, 95% CI (1.21, 1.45), p-value = 6.32e-10). Census Tracts more frequently have a lower percentage of Native American/Alaska Native individuals than Black individuals (Figure 4); given the logarithmic scale the model was fitted to we can say that these smaller ethnic groups are disproportionately impacted.
+Similar in size to % Black, a positive relationship was found with **% Native American/Alaska Native** in Urban areas (51% increase, 95% CI (1.42, 1.60), p-value < 2e-16). In Rural areas, the odds are nearly 100% higher per logarithmic unit increase of Native American/Alaska Natives (additional multiplicative effect of 32% in Rural areas, 95% CI (1.21, 1.45), p-value = 6.32e-10). Census Tracts more frequently have a lower percentage of Native American/Alaska Native individuals than Black individuals (Figure 4); given the logarithmic scale the model was fitted to we can say that these smaller ethnic groups are disproportionately impacted.
 
 Tables 1 and 2 also show the largest positive relationships are in **% Hawaiian/Other Pacific Islander** in both Urban and Rural areas, and for **% Multiracial/Other** specifically in Urban areas. These ethnicities also tend to represent smaller percentages of the population.
 
