@@ -466,7 +466,7 @@ eth_range_df$predictor <- factor(eth_range_df$predictor,
 
 ## Exploring Low Access by Ethnicity, Income, and Poverty Rates 
 
-```{r low-access-boxpots-ethnicity, fig.width=5.2, fig.height=2.9}
+```{r low-access-boxpots-ethnicity, fig.width=6.2, fig.height=3.3}
 ff <- unname("LAhalfand10")
 box_by_flag_group(boxplotdf, ff, family_of(ff), eth_grp, range_df = eth_range_df)
 ```
@@ -534,7 +534,7 @@ However, in Urban tracts this effect is reversed. This reversed effect may be ca
 
 ## Exploring Low Income and Low Access (LILA) flags by Ethnicity
 
-```{r low-income-low-access-boxpots-ethnicity, fig.width=5.2, fig.height=2.9}
+```{r low-income-low-access-boxpots-ethnicity, fig.width=6.2, fig.height=3.3}
 ff <- unname("LILATracts_halfAnd10")
 box_by_flag_group(boxplotdf, ff, family_of(ff), eth_grp, range_df = eth_range_df)
 ```
@@ -890,7 +890,7 @@ rownames(results_rural) <- rural_rownames[rownames(results_rural)]
 
 ```{r urban_table, }
 results_urban %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption = "Demographic effects on odds in Urban Census Tracts")
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption = "Demographic effects on odds (exponents of coefficients) in Urban Census Tracts")
 ```
 
 ```{r results_combined_in_rural}
@@ -905,12 +905,17 @@ rownames(results_combined) <- rownames(results_rural)
 
 results_combined %>%
   slice(-1) %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Overall effect of demographics on odds in Rural Census Tracts (equal to Urban effect times additional Rural effect)")
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Overall effect of demographics on odds in Rural Census Tracts (equal to the exponent of the coefficient for the demographic's effect in Urban areas, multiplied by the exponent of the coefficient for the corresponding Rural interaction term)")
 
 ```
 
+```{r rural_table}
+results_rural %>%
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Additional Demographic effects on odds in Rural Census Tracts (exponents of coefficients of interaction terms)")
+```
 
-The odds of a Rural Census Tracts being Low Income, Low Access is 55% less than the odds for Urban Census Tracts, as seen in Table 3 in the Appendix (95% CI (0.38, 0.52), p-value < 2e-16). This may be a consequence of inequities between Population Density types, but it may also be a consequence of our choice of distances for Urban and Rural areas in our response variable.
+
+The odds of a Rural Census Tracts being Low Income, Low Access is 55% less than the odds for Urban Census Tracts (95% CI (0.38, 0.52), p-value < 2e-16). This may be a consequence of inequities between Population Density types, but it may also be a consequence of our choice of distances for Urban and Rural areas in our response variable.
 
 ### Black population and Low Income, Low Access
 
@@ -971,7 +976,6 @@ In order to uphold ethical standards, findings should be considered alongside qu
 
 # References
 
-
 (1) Economic Research Service, U.S. Department of Agriculture. (2019).
 *Food Access Research Atlas: Large Retailer Access Map (LRAM) documentation*.
 https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
@@ -979,13 +983,8 @@ https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
 (2) U.S. Department of Agriculture, Economic Research Service. (2026, July 27). 
 *Food Access Research Atlas – Large Retailer Access Map Reference Guide* https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation/large-retailer-access-map-reference-guide
 
+
 # A note on AI usage for the Detailed Data Analysis
 
 Artificial Intelligence, specifically ChatGPT, was used to help find typos in written text, suggest wording improvements, to fix / alter code that generates more complex plots, and to help with adjusting general RMarkdown settings (e.g. suppressing warnings, setting plot sizes). The analysis itself was written manually, and all suggested code changes were reviewed for accuracy. No university material was provided to the AI for these purposes.
 
-# Appendix
-
-```{r rural_table}
-results_rural %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2))) %>% kable(caption="Additional Demographic effects on odds in Rural Census Tracts")
-```
