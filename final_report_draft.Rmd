@@ -23,36 +23,22 @@ The students I collaborated with in Phase 1 are:
 - Hamid Mehmood (300 693 052)
 - Leon Cai (300 692 424)
 
-
 # Executive Summary
 
---- purpose
 Difficulty accessing food due to economic or geographic barriers can significantly impact
-a person's quality of life and exacerbate existing inequalities. This report aims to understand, in the United States, the difference in how various demographics (particularly different ethnic groups) are impacted by limited access to food. This can help inform future action taken to address this known issue.
+a person's quality of life and exacerbate existing inequalities. This report examines how the relationship between demographic composition and low income, low access status varies across ethnic groups, and between Urban and Rural Census Tracts in the United States.
 
-The 2019 Large Retailer Access Map (LRAM) dataset describes per Census Tract whether significant portions of the population have low access to supermarkets, are low income, and includes flags combining the two. It also contains ethnicity and age-based demographic breakdowns of the population. Measurements are from the 2010 United States Census. This dataset exclusively was analysed.
+The analysis uses the 2019 Large Retailer Access Map (LRAM), based on 2010 Census data. Alaska and Hawaii were excluded due to their geographic separation and historical distinctions. Census Tracts with populations below 150 were also excluded. The outcome measures whether a tract is classified (1) or not classified (0) as Low Income and Low Access, using access thresholds of 1/2 mile in Urban areas and 10 miles in Rural areas. All ethnic groups available in the dataset (represented as percentages of the Census Tract's total population) were analysed, along with differences between Urban and Rural areas.
 
-Census Tracts in Hawaii and Alaska were excluded; these States are geographically separate from others, and have unique historic distinctions, making them outliers. The outcomes of this analysis therefore cannot be applied to these locations.
+A model using data on an adjusted natural **logarithmic scale** provided the best fit. Consequently, differences at larger magnitudes have a smaller impact than differences at smaller magnitudes; an increase from 1% to 2% has a greater impact than an increase from 10% to 11%.
 
-Census Tracts where the population was smaller than 150 were also excluded. The model fit measures demographic information as percentages of the total population, and so model fit was expected to improve when removing the smallest Census Tracts. 
+A higher percentage of Black individuals in a Census Tract indicated greater odds of being Low Income and Low Access, where an increase from  (50% increase per % increase on logarithmic scale, 95% CI (1.48, 1.52), p-value < 2e-16) for both Urban and Rural areas.
 
+A similar increase in odds was discovered for increasing percentages of **Native Americans/Alaska Natives** in Urban areas (51% increase per unit increase on the logarithmic scale, 95% CI (1.42, 1.60), p-value < 2e-16) and even larger for Rural areas at a near 100% increase per unit on the logarithmic scale (additional multiplicative effect of 32% for Rural Census Tracts, 95% CI (1.21, 1.45), p-value = 6.32e-10). For **Hawaiian/Other Pacific Islanders** the odds increase by 115% in both Urban and Rural areas (95% CI (1.93, 2.39), p-value < 2e-16).
 
-All ethnic groups available in the dataset (represented as percentages of the Census Tract's total population) were analysed for their relationship with whether a Census Tract is (1) or is not (0) considered to be Low Income _and_ Low Access at 1/2 mile for Urban Census Tracts, or 10 miles for Rural Census Tracts. I also explored how this relationship differs between Urban and Rural Census Tracts.
+Different relationships were found in Urban and Rural areas for the percentage of **Hispanic** people: a decrease in odds was observed in Urban Census Tracts with more Hispanic people, and an increase in odds was observed in Rural Census Tracts with more Hispanic people. More analysis, either qualitative or quantitative, may be done to better understand the impact on this ethnic group.
 
-When fit on data converted to a **logarithmic scale**, the model was found to have the best fit, and the explanatory variables had a linear correlation with the output. 
-
-A higher percentage of Black individuals in a Census Tract indicated greater odds of being Low Income and Low Access; for each unit increase in the percentage of Black people on a logarithmic scale, the odds increase by 50% (95% CI (1.48, 1.52), p-value < 2e-16). No statistically significant difference in this relationship was found between Urban and Rural Census Tracts.
-
-Ethnicities that typically represent a smaller percentage of the population exhibited even greater positive relationships:
-- For each unit increase in the percentage of **Native American/Alaska Natives** on a logarithmic scale, the odds of a Census Tract being Low Income, Low Access increase by 51% in Urban areas (95% CI (1.42, 1.60), p-value < 2e-16), and nearly 100% in Rural areas (additional multiplicative effect of 32% for Rural Census Tracts, 95% CI (1.21, 1.45), p-value = 6.32e-10)
-- For each unit increase in the percentage of **Hawaiian/Other Pacific Islander** on a logarithmic scale, the odds of a Census Tract being Low Income, Low Access increase by 115% in Urban areas (95% CI (1.93, 2.39), p-value < 2e-16) with no statistically significant difference found in Rural areas
-
-Different relationships were found in Urban and Rural areas for the percentage of **Hispanic** people, with a 39% **decrease** per unit increase in Urban areas (95% CI (0.58, 0.64), p-value < 2e-16), and a 27% increase per unit increase in Rural areas (additional multiplicative effect of 109% for Rural Census Tracts, 95% CI (1.80, 2.42), p-value < 2e-16).
-
-Changes and targeted initiatives should prioritise or strongly consider the impact on areas with a stronger presence of Black, Native American, Alaskan Native, Hawaiian, and other Pacific Islander groups, to prevent exacerbating existing inequalities these communities face. Initiatives that increase food access in areas with a higher percentage of these demographics may have a greater impact. The potential impacts on Urban and Rural Census Tracts should generally be considered separately.
-
-Further research could be done to understand the relationship with the Hispanic population and Low Income, Low Access, and to investigate food access in Alaska and Hawaii separately.
-
+Targeted initiatives should prioritise or strongly consider the impact on areas with a stronger presence of Black, Native American, Alaskan Native, Hawaiian, and other Pacific Islander groups, to prevent exacerbating existing inequalities these communities face. Initiatives that increase food access in areas with a higher percentage of these demographics may have a greater impact. The potential impacts on Urban and Rural Census Tracts should generally be considered separately. Further research could also explore the relationship between the number of children or elderly within specific ethnic groups, with low income and/or low access.
 
 
 # Background
@@ -81,10 +67,8 @@ Specifically, I aim to answer the question:
 
 Addressing this question can achieve the following:
 
-1. It may highlight unforeseen consequences, or potentially hidden biases, in decisions made by those that 
-influence the location of supermarkets, such as local governments and supermarket businesses
+1. It may highlight unforeseen consequences, or potentially hidden biases, in decisions made by those that influence the location of supermarkets, such as local governments and supermarket businesses
 2. It may identify areas and population groups that future initiatives should prioritise, to have the greatest impact
-<!-- 1-3 pages -->
 
 
 
@@ -564,7 +548,6 @@ box_by_flag_group(boxplotdf, ff, family_of(ff), eth_grp, range_df = eth_range_df
 
 Figure 3 demonstrates there are different relationships between various and the Census Tract's status for Low income and low access (measured at 1/2 mile for Urban and 1 mile for Rural).
 
-
 The largest ethnicity-based difference between the two statuses is seen in the percentage of the population that is White:  the median percentage for census tracts that are flagged is around 60%, whereas the median percentage for census tracts that are not flagged is closer to 90%.
 
 In contrast, the median percentage of Black individuals in the population for census tracts that are flagged is around 10%, whereas the median percentage of Black individuals in the population for census tracts that are not flagged is less than 5%. This effect is in the opposite direction to the effect of the percentage of White individuals in the population.
@@ -690,7 +673,7 @@ lr.data.clean <- filter(lr.data, !(CensusTract %in% c(
 
 ```
 
-## Analytical techniques
+## Analysis techniques
 
 A **logistic regression** model was fit. This model type is suitable for predicting information with two classes, such as whether a Census Tract is considered to have or not have a significant Low Income and Low Access population. 
 
@@ -970,10 +953,10 @@ This may indicate better outcomes for the Hispanic population in Urban areas com
 
 Note that a "worse" outcome refers to higher odds that a Census Tract is flagged as Low Income and Low Access.
 
-1. Slightly better outcomes were observed in Census Tracts with a larger percentage of children. However, no conclusions could be drawn on the interaction of children and different ethnicities. Note that no information was available on the breakdown of the percentage of children that belonged to different ethnicities 
-1. Better outcomes were observed in Census Tracts with larger Asian populations in both Urban and Rural, while worse outcomes were observed in Census Tracts with larger Black populations
+1. Slightly better outcomes were observed in Census Tracts with a larger percentage of children. However, no conclusions could be drawn on the interaction of children and different ethnicities. Note that no information was available on the breakdown of the percentage of children that belonged to different ethnicities .
+1. Better outcomes were observed in Census Tracts with larger Asian populations in both Urban and Rural, while worse outcomes were observed in Census Tracts with larger Black populations.
 1. The smallest minority groups in the United States of America, including Hawaiian/Other Pacific Islander, and Native American, have a disproportionately strong relationship with worse outcomes.
-1. Distinctions between Urban and Rural areas are clear, and impacts vary for different ethnicity groups.
+1. Distinctions between Urban and Rural areas are clear, and impacts vary for different ethnic groups.
 
 Changes and targeted initiatives should prioritise or strongly consider the impact on areas with a stronger presence of Native American, Alaskan Native, Hawaiian, and other Pacific Islander groups, to prevent exacerbating existing inequalities these communities face.
 
@@ -981,7 +964,7 @@ Black communities in Urban and Rural areas have been similarly affected and may 
 
 These findings cannot be applied to the States of Alaska and Hawaii, and not to Census Tracts where the population is smaller than 150. Further research focussing on these areas may be beneficial for further understanding.
 
-Further research may also include gathering data on ages within different demographics (for example how many black children are in an area compared to white children) which may improve understanding of relationships with other compounding difficulties such as the capacity to support non-working family members.
+Further research may also include gathering data on ages within different demographics (for example, how many Black children are in an area compared to how many White children) which may improve understanding of relationships with other compounding difficulties such as the capacity to support non-working family members.
 
 In order to uphold ethical standards, findings should be considered alongside quantitative knowledge of these communities, their opinions and cultures, when planning action from these findings.
 
