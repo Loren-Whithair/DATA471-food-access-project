@@ -19,10 +19,9 @@ This report uses the 2019 LRAM data (documentation [here](https://www.ers.usda.g
 - [2025 SRAM variable lookup](https://docs.google.com/spreadsheets/d/1IYKyRGcHnefbHvXBJkAp4avvkRp3IjlQOheCJe80q_U/edit?gid=143586456#gid=143586456)
 
 
+#### Rendering the final detailed analysis report to PDF
 
-#### (OLD) Rendering the group report to PDF
-
-`group_report.Rmd` is the RMD file that renders the final report. Other files contain draft versions of various components, and other EDA work that didn't make the final cut.
+`food_access_project_Loren_Whithair.Rmd` is the RMD file that renders the final report. Other files contain draft versions of various components, and are stored in the "drafts, experiments" folder.
 
 One-time setup (once per machine, works the same on Mac/Windows/Linux):
 ```r
@@ -36,11 +35,10 @@ install (MacTeX, MiKTeX, ...) - it auto-installs any package the report
 needs the first time it's missing, so nobody has to manually chase
 "package X not found" errors.
 
-To render: pull the full repo first (the report needs `figures/`
-next to it, not just the one file), then in RStudio open
-`group_report.Rmd` and click Knit, or run:
+To render: pull the full repo first, then in RStudio open
+`food_access_project_Loren_Whithair.Rmd` and click Knit, or run:
 ```r
-rmarkdown::render("group_report.Rmd")
+rmarkdown::render("food_access_project_Loren_Whithair.Rmd")
 ```
 The first render can take a minute while tinytex fetches any missing
 package - only happens once.
