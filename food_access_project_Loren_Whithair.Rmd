@@ -1,6 +1,6 @@
 ---
-title: "Data471 EDA Project"
-author: "Group 21: Loren Whithair, Nancy Grace Busto, Hamid Mehmood, Leon Cai"
+title: "Data471 Final Project"
+author: "Loren Whithair (Student ID: 300 434 521)"
 date: "`r Sys.Date()`"
 output:
   pdf_document:
@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, fig.align = "center")
 
 #### Additional Authors
 
-The students I collaborated with in Phase 1 are:
+The students I collaborated with in Phase 1 (Exploratory Data Analysis) are:
 
 - Nancy Grace Busto (300 691 941)
 - Hamid Mehmood (300 693 052)
@@ -478,7 +478,7 @@ box_by_flag_group(boxplotdf, ff, family_of(ff), eth_grp, range_df = eth_range_df
 \end{center}
 ```
 
-```{r low-access-boxpots-income, fig.width=5.2, fig.height=1.7}
+```{r low-access-boxpots-income, fig.width=5.2, fig.height=2.1}
 ff <- unname("LAhalfand10")
 box_by_flag_group(boxplotdf, ff, family_of(ff), ip_grp)
 ```
@@ -497,7 +497,7 @@ The difference in income and poverty rate between Census Tracts by Low Access st
 
 ## Exploring differences in Urban and Rural Census Tracts
 
-```{r poverty-income-by-urban, fig.width=5.2, fig.height=1.9}
+```{r poverty-income-by-urban, fig.width=5.2, fig.height=2.2}
 
 p_income_urban <- ggplot(df, aes(LA1and10_f, MedianFamilyIncome, fill = LA1and10_f)) +
   geom_boxplot(outlier.shape = NA, width = 0.6, linewidth = 0.4) +
@@ -978,6 +978,10 @@ https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation
 
 (2) U.S. Department of Agriculture, Economic Research Service. (2026, July 27). 
 *Food Access Research Atlas – Large Retailer Access Map Reference Guide* https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation/large-retailer-access-map-reference-guide
+
+# A note on AI usage for the Detailed Data Analysis
+
+Artificial Intelligence, specifically ChatGPT, was used to help find typos in written text, suggest wording improvements, to fix / alter code that generates more complex plots, and to help with adjusting general RMarkdown settings (e.g. suppressing warnings, setting plot sizes). The analysis itself was written manually, and all suggested code changes were reviewed for accuracy. No university material was provided to the AI for these purposes.
 
 # Appendix
 
